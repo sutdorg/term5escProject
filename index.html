@@ -1,0 +1,37 @@
+<html>
+  <head>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
+    <script src="development.js"></script>
+    <link rel="stylesheet" href="development.css" />
+  </head>
+  <body>
+    <div class="form">
+      <input
+        type="text"
+        name=""
+        id="customer_name"
+        placeholder="Please input your name"
+      />
+      <br />
+      <input
+        type="text"
+        name=""
+        id="customer_number"
+        placeholder="Please input your phonenumber"
+      />
+      <br />
+      <select id="select_skill">
+        <option>Please choose what you want to consult</option>
+        <option>Technical</option>
+        <option>Billing</option>
+        <option>Servicing</option>
+      </select>
+      <br />
+      <button onclick="submitSkill()" type="submit">Submit</button>
+    </div>
+    <div class="live_chat">
+      <button onclick="enter_form()" class="enter_button">Live Chat</button>
+      <button onclick="exit_form()" class="exit_button">Go back</button>
+    </div>
+  </body>
+</html>
