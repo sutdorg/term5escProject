@@ -1,0 +1,47 @@
+<html>
+<head>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/es5-shim/4.5.9/es5-shim.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/es6-promise/4.0.5/es6-promise.min.js"></script>
+    <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="//cdn.jsdelivr.net/momentjs/2.15.1/moment-with-locales.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.7.5/angular.min.js"></script>
+    <script src="./vendors-sdk.min.js"></script>
+    <script src="./rainbow-sdk.min.js"></script>
+    <script src="development.js"></script>
+    <link rel="stylesheet" href="development.css" />
+</head>
+<body>
+    <div class="form">
+        <input
+        type="text"
+        name=""
+        id="customer_name"
+        placeholder="Please input your name"
+        />
+        <br />
+        <input
+        type="text"
+        name=""
+        id="customer_number"
+        placeholder="Please input your phonenumber"
+        />
+        <br />
+        <select id="select_skill">
+            <option>Please choose what you want to consult</option>
+            <option>Technical</option>
+            <option>Billing</option>
+            <option>Servicing</option>
+        </select>
+        <br />
+        <button onclick="submitSkill()" type="submit">Submit</button>
+    </div>
+    <div class="live_chat">
+        <button onclick="enter_form()" class="enter_button">Live Chat</button>
+        <button onclick="exit_form()" class="exit_button">Go back</button>
+    </div>
+</body>
+</html>

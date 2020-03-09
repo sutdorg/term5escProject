@@ -1,0 +1,25 @@
+{
+  "name": "term5escproject",
+  "version": "1.0.0",
+  "description": "",
+  "main": "development.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sutdorg/term5escProject.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sutdorg/term5escProject/issues"
+  },
+  "homepage": "https://github.com/sutdorg/term5escProject#readme",
+  "dependencies": {
+    "rainbow-web-sdk": "^1.67.0"
+  },
+  "devDependencies": {
+    "http-server": "^0.12.1"
+  }
+}
