@@ -1,0 +1,48 @@
+Testing Implementation 
+
+Unit Testing
+Potential Testing Tools
+npm-test: It is an effective tool to run unit testing for Javascript. It will handle most of our unit testing because most of our backend programming is in Javascript. This is included in the starter kit for SDK Node JS.
+
+Test Case Examples
+Register as a customer
+No personal information (name and contact information) entered → Prompts to key in the personal information
+Invalid form of contact information (contact number or email) entered → Prompts to key in the valid contact information
+No question type entered → Prompts to key in the question type
+Valid personal information,question type and contact information entered → Sends the connecting messages to the customer
+Agent Availability Status
+Did not enter status to change to→ Prompts to key in the current availability status
+Valid change in status availability entered → Sends messages that inform that the change is sent to the server.
+Agent Skills
+No agent skill tags entered → Prompts to key in agent skill tags they want
+Valid agent skill tags entered → Send the connecting messages.
+
+System Testing
+Potential Testing Tools
+Sellinum: It is a portable tool for system testing, especially for testing web applications. It automates testing for web applications across different browsers and platforms.
+
+Test Case Examples
+Register as a customer
+Test with valid personal information and appropriate question type → If the testing is successful, it will send connecting messages to the customer. Any other response will appear, if failing.
+Update status of an agent (Black Box Testing)
+Run a test by changing the availability status of an agent → If the testing is successful, the change is updated on the list of status. If failing, the change is not seen on the list.
+Agent Skills (Black Box Testing)
+Test with a certain skill tag when an agent with the skill tag is available → If successful, the request is routed to the agent. If the request is routed to an agent with a different skill tag, or not routed to any, then the test fails.
+Test with a certain skill tag when an agent with the skill tag is not available → If successful, the request is on the queue. If not, the request is routed to the agent, or not routed to any.
+Queueing Support (Black Box Testing)
+Run a test by requesting for a support without any existing queue → A error message will be sent , stating that that request is not valid and prompt a for a valid request
+Run a test by requesting for a support with an existing queue → The request is added to the queue, if successful.
+Run a test by adding three requests for the same agent with 30 seconds of interval → The testing is successful, if the first request is the top in queue and the last request is the last in queue. When the agent is available, the top in queue should be routed to the agent to make the testing successful.
+Multiple Customers to Agent (Black Box Testing)
+Run a test with more than 5 requests for the same skill tag with only 1 agent for that skill tag available→ Apart from the first 5 requests, the remaining requests should be in the queue to make the test successful.
+Run a test with less than or equal to 5 requests for the same skill tag → the requests are routed to the agent and the chatroom is created.
+Rerouting Customers (Black Box Testing)
+Test by routing a request to the wrong agent when an appropriate agent is available → If the testing is successful, the request is rerouted to the appropriate agent.
+Test by routing a request to the wrong agent when an appropriate agent is not available → If testing is successful, the request is sent to the Queueing Support use case, waiting for the agent to be available.
+
+Robustness Testing
+	Possible Misuse Cases:
+Too many people requesting or one person making too many requests
+Stress testing will be used to test whether the web server can still handle the heavy loads. The potential tool for stress testing would be Load Ninja which is useful for us to check if the web can sustain the massive load of requests, and the limit of the loads for the server.
+A lot of creation of requests,request resolution and mismatch of agents in a small period of time.
+Stress test this case to see if all these actions happening at the same time will there be any bugs that occur like if the database still reflecting the correct information and whether the application will crash. Load Ninja can also be used for this test case to create the scenario as described.
