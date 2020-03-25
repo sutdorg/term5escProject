@@ -38,6 +38,7 @@
 
 <script>
 import rainbowSDK from 'rainbow-web-sdk'
+// rainbowSDK needs angular
 export default {
   name: 'chatroom',
   data () {
