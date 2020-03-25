@@ -4,6 +4,7 @@ import Router from 'vue-router'
 import LiveChatButton from '@/components/LiveChatButton'
 import FillForm from '@/components/FillForm'
 import ChatRoom from '@/components/ChatRoom'
+import Bye from '@/components/Bye'
 
 Vue.use(Router)
 
@@ -23,6 +24,11 @@ export default new Router({
       path: '/chatroom',
       name: 'ChatRoom',
       component: ChatRoom
+    },
+    {
+      path: '/bye',
+      name: 'Bye',
+      component: Bye
     }
   ]
 })

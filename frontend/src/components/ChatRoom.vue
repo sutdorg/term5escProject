@@ -37,6 +37,7 @@
 </template>
 
 <script>
+import rainbowSDK from 'rainbow-web-sdk'
 export default {
   name: 'chatroom',
   data () {
@@ -47,33 +48,42 @@ export default {
         {'from': 'agent', 'me': false, 'content': 'May I help you? '}
       ],
 
-      agent_msgs: [
-        'agentm1',
-        'agentm2',
-        'agentm3',
-        'agent4',
-        'agent4',
-        'agent4',
-        'agent4',
-        'agent4',
-        'agent4',
-        'agent4'
-      ],
-      guest_msgs: ['g1', 'g2', 'g3'],
+      // agent_msgs: [
+      //   'agentm1',
+      //   'agentm2',
+      //   'agentm3',
+      //   'agent4',
+      //   'agent4',
+      //   'agent4',
+      //   'agent4',
+      //   'agent4',
+      //   'agent4',
+      //   'agent4'
+      // ],
+      // guest_msgs: ['g1', 'g2', 'g3'],
       inputContent: ''
     }
   },
   methods: {
     endChat () {
       console.log('end chat here')
+      this.$router.push('Bye')
+      // should clear localStorage and whatever here
+      localStorage.last_name = ''
+      localStorage.first_name = ''
+      localStorage.phone_number = ''
+      localStorage.selected_skill = ''
     },
     send () {
       if (this.inputContent === '') {
-        //
+        // pass
       } else {
         console.log(this.inputContent)
+        rainbowSDK.conversations.openConversationForContact('e')
         this.msgs.push({'from': 'guest', 'me': true, 'content': this.inputContent})
-
+        // some code to send massage to somewhere
+        //
+        //
         // scroll to bottom
         this.$nextTick(() => {
           var scrollbar = document.querySelector('.chat-body')
@@ -85,7 +95,30 @@ export default {
     },
     newline () {
       this.inputContent = `${this.inputContent}`
+    },
+    get_msg () {
+      console.log('i am retrieving message, timestamp:' + new Date().getTime())
     }
+  },
+  mounted () {
+    // initialise rainbow sdk
+    this.timer2 = setTimeout(() => {
+      rainbowSDK.initialize('APPID', 'APPSECRET')
+        .then(() => {
+          console.log('[Hello World] :: Rainbow SDK is initialized!')
+        })
+        .catch(err => {
+          console.log('[Hello World] :: Something went wrong with the SDK.', err)
+        })
+    }, 0)
+    this.timer0 = setTimeout(() => { this.msgs.push({'from': 'agent', 'me': false, 'content': 'Hi, ' + localStorage.first_name + ', What can I do for you?'}) }, 1000)
+    // in miniseconds
+    this.timer1 = setInterval(() => { setTimeout(this.get_msg, 1) }, 3000)
+  },
+  beforeDestroy () {
+    clearInterval(this.timer0)
+    clearInterval(this.timer1)
+    clearInterval(this.timer2)
   }
 }
 </script>
@@ -108,9 +141,7 @@ img {
   margin-top: 5px;
 }
 
-.chatroom {
-
-}
+.chatroom {}
 
 .chat-body {
   overflow: auto;

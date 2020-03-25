@@ -41,9 +41,20 @@ export default {
   },
   methods: {
     submit () {
-    //   console.log(this.first_name)
-    //   console.log(this.select_skill)
-    // and store data in localStorage
+    // do some check
+      if (this.last_name === '' || this.first_name === '' || this.phone_number === '' || this.selected_skill === '') {
+        alert('please fill in all the table')
+        return
+      }
+      var reg = /^\d+$/
+      if (reg.test(this.phone_number) === false) {
+        alert('Please enter a valid phone number.')
+        return
+      }
+
+      //   console.log(this.first_name)
+      //   console.log(this.select_skill)
+      // and store data in localStorage
       localStorage.last_name = this.last_name
       localStorage.first_name = this.first_name
       localStorage.phone_number = this.phone_number
@@ -61,6 +72,7 @@ export default {
       })
         .then(function (response) {
           // get guest id
+          // then store in localStorage
           console.log(response)
         })
         .catch(function (error) {
@@ -92,6 +104,8 @@ input {
 }
 select {
   width: 80%;
+    font-size: 16px;
+  height: 24px;
 }
 
   button.submit {
