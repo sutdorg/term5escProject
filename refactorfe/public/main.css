@@ -1,0 +1,150 @@
+/* LiveChatButton */
+.open_button {
+    width: 270px;
+    height: 40px;
+    border-width: 0px;
+    border-radius: 3px;
+    background: rgb(14, 104, 194);
+    cursor: pointer;
+    outline: none;
+    font-family: Microsoft YaHei;
+    color: white;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+/* FillForm */
+
+.fillform {
+    width: 350px;
+    height: 500px;
+  }
+  
+  label {
+    display: block;
+  }
+  
+  input {
+    display: inline-block;
+      font-size: 16px;
+      width: 80%;
+      border-width: 1px;
+      margin: 0 6px 16px 0;
+      min-height: 20px;
+      max-height: none;
+  }
+  select {
+    width: 80%;
+      font-size: 16px;
+    height: 24px;
+  }
+  
+    button.submit {
+      margin-top: 10px;
+      width: 50%;
+      height: 30px;
+      border-width: 0px;
+      border-radius: 1px;
+      background: rgb(14, 104, 194);
+      cursor: pointer;
+      outline: none;
+      font-family: Microsoft YaHei;
+      color: white;
+      font-size: 17px;
+      font-weight: 600;
+  }
+
+/* ChatRoom */
+.agent_chat {
+    margin-top: 7px;
+    display: flex;
+    justify-content: flex-start;
+  }
+  
+  .guest_chat {
+    margin-top: 7px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  
+  img {
+    width: 30px;
+    margin-top: 5px;
+  }
+  
+  .chatroom {}
+  
+  .chat-body {
+    overflow: auto;
+    width: 400px;
+    height: 350px;
+    border: 1px solid;
+    background-color: rgb(250, 240, 226);
+  }
+  
+  .agent_msg {
+    border: 1px solid rgb(224, 250, 193);
+    background-color: rgb(214, 247, 175);
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 3px;
+    padding-right: 8px;
+    border-radius: 8px;
+  }
+  
+  .agent_logo {
+    background: url('./assets/agent_logo.png') center;
+    background-size: cover;
+    display: flex;
+    justify-content: flex-start;
+  }
+  
+  .guest_logo {
+    margin-top: 4px;
+    background: url('./assets/guest_logo.png') center;
+    background-size:cover;
+  }
+  
+  .guest_msg {
+    border: 1px solid rgb(224, 250, 193);
+    background-color: rgb(214, 247, 175);
+    margin-top: 4px;
+    padding-top: 0px;
+    padding-bottom: 1px;
+    padding-left: 6px;
+    padding-right: 3px;
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 6px;
+    background-color: rgb(250, 240, 226);
+  }
+  
+  ::-webkit-scrollbar-track {
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: #1767b1;
+    border-radius: 8px;
+  }
+  
+  .chat-input textarea {
+    margin-top: 10px;
+    width: 320px;
+  }
+  
+  .chat-input button {
+    position: relative;
+    top: -10px;
+      width: 70px;
+      height: 35px;
+      border-width: 0px;
+      border-radius: 3px;
+      background: rgb(14, 104, 194);
+      cursor: pointer;
+      color: white;
+      font-size: 20px;
+      font-weight: 600;
+  }
