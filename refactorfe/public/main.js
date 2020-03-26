@@ -27,23 +27,23 @@ rainbowSDK.start();
 rainbowSDK.load();
 console.log(rainbowSDK.version());
 
-var onReady = function onReady() {
-  var myRainbowLogin = "zee.dummyy@gmail.com"; // Replace by your login
-  var myRainbowPassword = "3V<.8FygXu>2"; // Replace by your password
+// var onReady = function onReady() {
+//   var myRainbowLogin = "zee.dummyy@gmail.com"; // Replace by your login
+//   var myRainbowPassword = "3V<.8FygXu>2"; // Replace by your password
 
-  // The SDK for Web is ready to be used, so you can sign in
-  rainbowSDK.connection
-    .signin(myRainbowLogin, myRainbowPassword)
-    .then(function(account) {
-      console.log("login successful")
-      // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
-    })
-    .catch(function(err) {
-      console.log("login error");
-      console.log(err);
-      // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
-    });
-};
+//   // The SDK for Web is ready to be used, so you can sign in
+//   rainbowSDK.connection
+//     .signin(myRainbowLogin, myRainbowPassword)
+//     .then(function(account) {
+//       console.log("login successful");
+//       // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
+//     })
+//     .catch(function(err) {
+//       console.log("login error");
+//       console.log(err);
+//       // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
+//     });
+// };
 
 // Listen when the SDK is ready
 document.addEventListener(rainbowSDK.RAINBOW_ONREADY, onReady);
@@ -80,9 +80,9 @@ var FillForm = Vue.extend({
 
   <select v-model="selected_skill">
     <option disabled value="">Please choose what you want to consult</option>
-    <option>Technical</option>
-    <option>Billing</option>
-    <option>General</option>
+    <option>Tablet</option>
+    <option>Phone</option>
+    <option>Computer</option>
   </select>
   <br />
 
@@ -95,7 +95,7 @@ var FillForm = Vue.extend({
       last_name: "",
       phone_number: "",
       selected_skill: "",
-      post_url: "http://127.0.0.1:6062"
+      post_url: "http://10.12.190.247:3002/createguest"
     };
   },
   methods: {
@@ -141,7 +141,9 @@ var FillForm = Vue.extend({
           // then store in localStorage
           console.log(response);
           // like normal ways to read json
-          localStorage.strId = response.data.strId;
+          // localStorage.JID = response.data.JID;
+          // localStorage.guestEmail = response.data.d;
+          // localStorage.guestPassword = response.data.p;
         })
         .catch(function(error) {
           console.log(error);
@@ -206,10 +208,12 @@ var ChatRoom = Vue.extend({
       console.log("end chat here");
       this.$router.push("Bye");
       // should clear localStorage and whatever here
-      localStorage.removeItem(last_name);
-      localStorage.removeItem(first_name);
-      localStorage.removeItem(phone_number);
-      localStorage.removeItem(selected_skill);
+      // localStorage.removeItem(last_name);
+      // localStorage.removeItem(first_name);
+      // localStorage.removeItem(phone_number);
+      // localStorage.removeItem(selected_skill);
+      // remove whole localStorage
+      localStorage.clear();
     },
     send() {
       if (this.inputContent === "") {
@@ -217,8 +221,14 @@ var ChatRoom = Vue.extend({
       } else {
         console.log(this.inputContent);
         this.msgs.push({ from: "guest", me: true, content: this.inputContent });
+        localStorage.msgs = JSON.stringify(this.msgs);
         // some code to send massage to somewhere
-        //
+        // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
+        rainbowSDK.im.sendMessageToConversation(
+          conversation_i,
+          inputContent + " read!"
+        );
+
         //
         // scroll to bottom
         this.$nextTick(() => {
@@ -240,10 +250,30 @@ var ChatRoom = Vue.extend({
       // Do something with the new message received
       console.log(message);
       // new messages should be pushed to msgs
-      // this.msgs.push(); 
+      // this.msgs.push();
     }
   },
   mounted() {
+    // for test only
+    this.timer4 = setTimeout(() => {
+      var myRainbowLogin =
+        "1e3c0gj4xg3ploq9wcykfoxpkh5mzfcmb41pyh47@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
+      var myRainbowPassword = "ImG2HK2+w652CB*i1]z1[I71IKVOYf*i4Q06Al_0"; // Replace by your password
+
+      // The SDK for Web is ready to be used, so you can sign in
+      rainbowSDK.connection
+        .signin(myRainbowLogin, myRainbowPassword)
+        .then(function(account) {
+          console.log("login successful");
+          // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
+        })
+        .catch(function(err) {
+          console.log("login error");
+          console.log(err);
+          // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
+        });
+    }, 0);
+
     this.timer0 = setTimeout(() => {
       this.msgs.push({
         from: "agent",
@@ -253,6 +283,15 @@ var ChatRoom = Vue.extend({
     }, 1000);
 
     this.timer2 = setTimeout(() => {
+      if (localStorage.msgs != null) {
+        this.msgs = JSON.parse(localStorage.msgs);
+        console.log(localStorage.msgs);
+        this.$nextTick(() => {
+          var scrollbar = document.querySelector(".chat-body");
+          scrollbar.scrollTop = scrollbar.scrollHeight;
+        });
+        return;
+      }
       this.msgs.push({
         from: "agent",
         me: false,
@@ -262,12 +301,43 @@ var ChatRoom = Vue.extend({
 
     // run after 2 senconds only once
     this.timer3 = setTimeout(() => {
-      // get Contact object using strId in localStorage
+      // get Contact object using JID in localStorage
       // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/contacts#module_Contacts+getContactById
-      localStorage.strId = "sdffsd";
-      this.contact_i = rainbowSDK.contacts.getContactById(localStorage.strId);
+      localStorage.JID = "5e7c74ba35c8367f99b90644"; // guest
+      localStorage.JID =
+        "d6aabfd1a348467a990f0dfcb94b5218@sandbox-all-in-one-rbx-prod-1.rainbow.sbg"; // agent
+
+      this.contact_i = rainbowSDK.contacts.searchByJid(localStorage.JID);
+      // var v;
+      var s = this.contact_i.then(v => {
+        // console.log(v)
+        // this.contact_i = v;
+        rainbowSDK.conversations
+          .openConversationForContact(v)
+          .then(function(promise) {
+            if (promise != null) {
+
+              this.conversation_i = promise;
+              console.log("Conversation estabished");
+              // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
+              document.addEventListener(
+                rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+                this.onNewMessageReceived
+              );
+            } else {
+              console.log(
+                "Fail to create a conversation using contact: " + this.contact_i
+              );
+            }
+          });
+      });
+
+      console.log(this.contact_i);
+
+      // console.log(this.contact_i.JSON());
       if (this.contact_i != null) {
         // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/conversations#module_Conversations+getConversationById
+        console.log("opening conversation");
         rainbowSDK.conversations
           .openConversationForContact(this.contact_i)
           .then(function(promise) {
@@ -286,14 +356,14 @@ var ChatRoom = Vue.extend({
             }
           });
       } else {
-        console.log("No contact found using strId: " + localStorage.strId);
+        console.log("No contact found using JID: " + localStorage.JID);
       }
-    }, 2000);
+    }, 10000);
 
     // we have a new message listener
     // we do not need this part, maybe
     // check for new messages every 3 seconds
-    
+
     // this.timer1 = setInterval(() => {
     //   setTimeout(this.get_msg, 1);
     // }, 3000);
@@ -309,7 +379,13 @@ var Bye = Vue.extend({
   template: `    <div class="bye">
   <p>Thank you for contacting us.</p>
   <p>Wish you have a good day</p>
-</div>`
+  <p>You can close the tab now</p>
+</div>`,
+  mounted() {
+    setTimeout(() => {
+      localStorage.clear();
+    }, 0);
+  }
 });
 
 const routes = [
