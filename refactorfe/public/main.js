@@ -1,3 +1,55 @@
+// import rainbowSDK
+import rainbowSDK from "./rainbow-sdk.min.js"; // If you do not use the bundler
+// import rainbowSDK from 'rainbow-web-sdk'; // If you use the bundler (for example - Webpack)
+
+var onReady = function onReady() {
+  console.log("[Hello World] :: On SDK Ready !");
+};
+
+var onLoaded = function onLoaded() {
+  console.log("[Hello World] :: On SDK Loaded !");
+  var APPID = "f073b5c05e4911ea9a6dcf004cf8c14e";
+  var APPSECRET =
+    "qNqw5dEnPTSoBEsxnlj4Mjw2BedJ93gaRXq6KLa8JNHPnNovsMHsB4zjytdP4TVz";
+  rainbowSDK
+    .initialize(APPID, APPSECRET)
+    .then(() => {
+      console.log("[Hello World] :: Rainbow SDK is initialized!");
+    })
+    .catch(err => {
+      console.log("[Hello World] :: Something went wrong with the SDK.", err);
+    });
+};
+document.addEventListener(rainbowSDK.RAINBOW_ONREADY, onReady);
+
+document.addEventListener(rainbowSDK.RAINBOW_ONLOADED, onLoaded);
+rainbowSDK.start();
+rainbowSDK.load();
+console.log(rainbowSDK.version());
+
+var onReady = function onReady() {
+  var myRainbowLogin = "zee.dummyy@gmail.com"; // Replace by your login
+  var myRainbowPassword = "3V<.8FygXu>2"; // Replace by your password
+
+  // The SDK for Web is ready to be used, so you can sign in
+  rainbowSDK.connection
+    .signin(myRainbowLogin, myRainbowPassword)
+    .then(function(account) {
+      console.log("login successful")
+      // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
+    })
+    .catch(function(err) {
+      console.log("login error");
+      console.log(err);
+      // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
+    });
+};
+
+// Listen when the SDK is ready
+document.addEventListener(rainbowSDK.RAINBOW_ONREADY, onReady);
+
+// end of import rainbowSDK
+
 var LiveChatButton = Vue.extend({
   template: `  <div class="livechatbutton">
   <button class="open_button" v-on:click="openForm()">Live Chat</button>
@@ -181,6 +233,14 @@ var ChatRoom = Vue.extend({
     },
     get_msg() {
       console.log("i am retrieving message, timestamp:" + new Date().getTime());
+    },
+    onNewMessageReceived(event) {
+      let message = event.detail.message;
+      this.conversation_i = event.detail.conversation;
+      // Do something with the new message received
+      console.log(message);
+      // new messages should be pushed to msgs
+      // this.msgs.push(); 
     }
   },
   mounted() {
@@ -200,33 +260,43 @@ var ChatRoom = Vue.extend({
       });
     }, 2000);
 
-    // get Contact object using strId in localStorage
+    // run after 2 senconds only once
     this.timer3 = setTimeout(() => {
-      rainbowSDK.contacts
-        .getContactById(localStorage.strId)
-        .then(function(res) {
-          // null mean no contact found
-          if (res != null) {
-            this.contact_i = res;
-            rainbowSDK.conversations
-              .openConversationForContact(this.contact_i)
-              .then(function(promise) {
-                if (promise != null) {
-                  this.conversation_i = promise;
-                } else {
-                  console.log("Fail to create a conversation using contact " + this.contact_i);
-                }
-              });
-          } else {
-            console.log("No contact found using strId " + localStorage.strId);
-          }
-        });
-    });
+      // get Contact object using strId in localStorage
+      // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/contacts#module_Contacts+getContactById
+      localStorage.strId = "sdffsd";
+      this.contact_i = rainbowSDK.contacts.getContactById(localStorage.strId);
+      if (this.contact_i != null) {
+        // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/conversations#module_Conversations+getConversationById
+        rainbowSDK.conversations
+          .openConversationForContact(this.contact_i)
+          .then(function(promise) {
+            if (promise != null) {
+              this.conversation_i = promise;
+              console.log("Conversation estabished");
+              // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
+              document.addEventListener(
+                rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+                this.onNewMessageReceived
+              );
+            } else {
+              console.log(
+                "Fail to create a conversation using contact: " + this.contact_i
+              );
+            }
+          });
+      } else {
+        console.log("No contact found using strId: " + localStorage.strId);
+      }
+    }, 2000);
 
-    // in miniseconds
-    this.timer1 = setInterval(() => {
-      setTimeout(this.get_msg, 1);
-    }, 3000);
+    // we have a new message listener
+    // we do not need this part, maybe
+    // check for new messages every 3 seconds
+    
+    // this.timer1 = setInterval(() => {
+    //   setTimeout(this.get_msg, 1);
+    // }, 3000);
   },
   beforeDestroy() {
     clearInterval(this.timer0);
