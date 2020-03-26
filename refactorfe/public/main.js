@@ -257,8 +257,8 @@ var ChatRoom = Vue.extend({
     // for test only
     this.timer4 = setTimeout(() => {
       var myRainbowLogin =
-        "1e3c0gj4xg3ploq9wcykfoxpkh5mzfcmb41pyh47@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
-      var myRainbowPassword = "ImG2HK2+w652CB*i1]z1[I71IKVOYf*i4Q06Al_0"; // Replace by your password
+        "93pn2uk4c30c6362pw4r9qo5n50ctb0tanldb9bt@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
+      var myRainbowPassword = "X,V/j}776~3QXjuF1M3xnjY4US]P38d[Tjz@Rp<4"; // Replace by your password
 
       // The SDK for Web is ready to be used, so you can sign in
       rainbowSDK.connection
@@ -306,59 +306,94 @@ var ChatRoom = Vue.extend({
       localStorage.JID = "5e7c74ba35c8367f99b90644"; // guest
       localStorage.JID =
         "d6aabfd1a348467a990f0dfcb94b5218@sandbox-all-in-one-rbx-prod-1.rainbow.sbg"; // agent
+      var contactJID = localStorage.JID;
+      console.log(contactJID);
+      var selectedContact = "";
+      var Conversation = "";
+      selectedContact = rainbowSDK.contacts.getContactByJID(contactJID);
 
-      this.contact_i = rainbowSDK.contacts.searchByJid(localStorage.JID);
-      // var v;
-      var s = this.contact_i.then(v => {
-        // console.log(v)
-        // this.contact_i = v;
-        rainbowSDK.conversations
-          .openConversationForContact(v)
-          .then(function(promise) {
-            if (promise != null) {
+      // Contact not found locally, ask to the server
+      if (selectedContact == undefined) {
+        rainbowSDK.contacts
+          .searchByJid(contactJID)
+          .then(contact => {
+            console.log(contact);
+            selectedContact = contact;
+            // console.log(selectedContact)
+            if (selectedContact) {
+              // Ok, we have the contact object
+              rainbowSDK.conversations
+                .openConversationForContact(selectedContact)
+                .then(function(conversation) {
+                  console.log("test");
+                  console.log(conversation);
 
-              this.conversation_i = promise;
-              console.log("Conversation estabished");
-              // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
-              document.addEventListener(
-                rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
-                this.onNewMessageReceived
-              );
+                  Conversation = conversation;
+                  
+                  console.log("Conversation estabished");
+                  console.log(Conversation)
+                  // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users4
+                  
+                  rainbowSDK.im.sendMessageToConversation(conversation, " read!");
+                  document.addEventListener(
+                    rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+                    onNewMessageReceived
+                  );
+                })
+                .catch(function(err) {
+                  console.log(
+                    "Fail to create a conversation using contact: " +
+                      selectedContact
+                  );
+                  console.log(err);
+                });
             } else {
-              console.log(
-                "Fail to create a conversation using contact: " + this.contact_i
-              );
+              // Strange, no contact with that Id. Are you sure that the id is correct?
             }
+          })
+          .catch(function(err) {
+            //Something when wrong with the server. Handle the trouble here
+            console.log(err);
           });
-      });
-
-      console.log(this.contact_i);
-
-      // console.log(this.contact_i.JSON());
-      if (this.contact_i != null) {
-        // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/conversations#module_Conversations+getConversationById
-        console.log("opening conversation");
-        rainbowSDK.conversations
-          .openConversationForContact(this.contact_i)
-          .then(function(promise) {
-            if (promise != null) {
-              this.conversation_i = promise;
-              console.log("Conversation estabished");
-              // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
-              document.addEventListener(
-                rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
-                this.onNewMessageReceived
-              );
-            } else {
-              console.log(
-                "Fail to create a conversation using contact: " + this.contact_i
-              );
-            }
-          });
-      } else {
-        console.log("No contact found using JID: " + localStorage.JID);
       }
-    }, 10000);
+      // console.log("selectedContact");
+      // console.log(selectedContact);
+
+      let onNewMessageReceived = function(event) {
+        let message = event.detail.message;
+        console.log(message);
+        // let Conversation = event.detail.conversation;
+
+        // Do something with the new message received
+      };
+
+      // console.log(this.contact_i);
+
+      // // console.log(this.contact_i.JSON());
+      // if (this.contact_i != null) {
+      //   // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/conversations#module_Conversations+getConversationById
+
+      //   rainbowSDK.conversations
+      //     .openConversationForContact(this.contact_i)
+      //     .then(function(promise) {
+      //       if (promise != null) {
+      //         this.conversation_i = promise;
+      //         console.log("Conversation estabished");
+      //         // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
+      //         document.addEventListener(
+      //           rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+      //           this.onNewMessageReceived
+      //         );
+      //       } else {
+      //         console.log(
+      //           "Fail to create a conversation using contact: " + this.contact_i
+      //         );
+      //       }
+      //     });
+      // } else {
+      //   console.log("No contact found using JID: " + localStorage.JID);
+      // }
+    }, 5000);
 
     // we have a new message listener
     // we do not need this part, maybe

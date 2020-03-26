@@ -1,0 +1,26 @@
+<!DOCTYPE html
+><head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.js"></script>
+  <script>
+      var get_url = "https://downloads.freemdict.com/Recommend/dictionary.json"
+      var dicts;
+      function getjson () {
+        axios
+        .get(get_url)
+        .then(function(response) {
+          // get guest id
+          // then store in localStorage
+          console.log(response.data.bulletinboard);
+          dicts = response.data.dictionary
+          console.log(dicts[1])
+        })
+        .catch(function(error) {
+          console.log(error);
+        });
+      }
+  </script>
+</head>
+
+<body>
+    <button onclick="getjson()">Click me</button>
+</body>
