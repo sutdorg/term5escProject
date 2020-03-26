@@ -93,7 +93,7 @@
   }
   
   .agent_logo {
-    background: url('./assets/agent_logo.png') center;
+    background: url('../assets/agent_logo.png') center;
     background-size: cover;
     display: flex;
     justify-content: flex-start;
@@ -101,7 +101,7 @@
   
   .guest_logo {
     margin-top: 4px;
-    background: url('./assets/guest_logo.png') center;
+    background: url('../assets/guest_logo.png') center;
     background-size:cover;
   }
   
