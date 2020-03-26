@@ -23,7 +23,6 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "axios": "^0.19.2",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-spies": "^1.0.0",

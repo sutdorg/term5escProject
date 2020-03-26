@@ -1,0 +1,234 @@
+<html xmlns:v-on="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8"/>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .open_button {
+    width: 270px; 
+	height: 40px; 
+	border-width: 0px; 
+	border-radius: 3px; 
+	background: rgb(14, 104, 194); 
+	cursor: pointer; 
+	outline: none; 
+	font-family: Microsoft YaHei;
+	color: white; 
+    font-size: 17px;
+    font-weight: 600;
+}
+
+#app {
+	width: 50%;
+
+}
+
+#customer_number {
+	border: 1px solid #ccc;
+	padding: 7px 0px;
+	border-radius: 3px;
+	padding-left:5px;
+	margin-bottom: 1rem;
+}
+
+#customer_name {
+	border: 1px solid #ccc;
+	padding: 7px 0px;
+	border-radius: 3px;
+	padding-left:5px;
+	margin-bottom: 1rem;
+	margin-left: 3.5rem;
+
+}
+
+#select_skill {
+	position: relative;
+	display: block;
+	margin: 0 auto;
+	width: 100%;
+	max-width: 325px;
+	font-size: 14px;
+	vertical-align: middle;
+	text-align: left;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
+#select_skill option {
+	color: black;
+}
+#select_skill::placeholder {
+	color: black;
+}
+
+.submit {
+	float: right;
+	width: 115px;
+	height: 22px;
+	border-width: 0px;
+	border-radius: 3px;
+	background: rgb(14, 104, 194);
+	cursor: pointer;
+	outline: none;
+	font-family: Microsoft YaHei;
+	color: white;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.exit_button {
+	float: left; 
+	width: 70px;
+	height: 22px;
+	border-width: 0px;
+	border-radius: 3px;
+	background: rgb(14, 104, 194);
+	cursor: pointer;
+	outline: none;
+	font-family: Microsoft YaHei;
+	color: white;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+#testapp {
+	display: block;
+}
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <div class="form" v-show="formisShow">
+        <label>First Name</label>
+        <input
+                type="text"
+                name=""
+                id="customer_first_name"
+                v-model="customer_first_name"
+
+        />
+        <br/>
+
+        <label>Last Name</label>
+        <input
+                type="text"
+                name=""
+                id="customer_last_name"
+                v-model="customer_last_name"
+
+        />
+        <br/>
+
+        <label>Phone number</label>
+        <input
+                type="text"
+                name=""
+                id="customer_number"
+                v-model="customer_number"
+        />
+        <br/>
+        <select id="select_skill">
+            <option>Please choose what you want to consult</option>
+            <option>Technical</option>
+            <option>Billing</option>
+            <option>General</option>
+        </select>
+        <br/>
+        <button class="submit" onclick="submitSkill()" type="submit">Start Chatting</button>
+    </div>
+    <div class="live_chat">
+        <button class="open_button" v-on:click="openForm()" v-show="openButtonisShow">Live Chat</button>
+        <button class="exit_button" v-on:click="closeForm()" v-show="closeButtonisShow">Go back</button>
+    </div>
+</div>
+<br>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+    function submitSkill() {
+  var guest_json = {};
+  guest_json["first_name"] = document.getElementById(
+    "customer_first_name"
+  ).value;
+  guest_json["last_name"] = document.getElementById("customer_last_name").value;
+  guest_json["phone_number"] = document.getElementById("customer_number").value;
+
+  var selected_skill = document.getElementById("select_skill");
+  var selected_index = selected_skill.selectedIndex;
+  guest_json["selected_skill"] = selected_skill.options[selected_index].text;
+
+
+  var url = "http://localhost:3002/createguest"; // POST url
+  var httpRequest = new XMLHttpRequest();
+  httpRequest.open("POST", url, true);
+  httpRequest.setRequestHeader("Content-type", "application/json"); // set header to json
+  httpRequest.send(JSON.stringify(guest_json));
+    httpRequest.onreadystatechange = function(){
+        // successful request
+
+            //do something, e.g. request.responseText
+            console.log(httpRequest.responseText);
+
+    }
+}
+
+// function enter_form() {
+//   var formDiv = document.getElementsByClassName("form")[0];
+//   formDiv.setAttribute("style", "display: block;");
+//   var button = document.getElementsByClassName("enter_button")[0];
+//   button.setAttribute("style", "display:none;");
+//   var button = document.getElementsByClassName("exit_button")[0];
+//   button.setAttribute("style", "display:block;");
+// }
+
+// function exit_form() {
+//   var formDiv = document.getElementsByClassName("form")[0];
+//   formDiv.setAttribute("style", "display: none;");
+//   var button = document.getElementsByClassName("enter_button")[0];
+//   button.setAttribute("style", "display:block;");
+//   var button = document.getElementsByClassName("exit_button")[0];
+//   button.setAttribute("style", "display:none;");
+// }
+
+
+var app1 = new Vue({
+  el: "#app",
+  data: {
+    formisShow: false,
+    openButtonisShow: true,
+    closeButtonisShow: false
+  },
+  methods: {
+    openForm: function() {
+      this.formisShow = true;
+      this.openButtonisShow = false;
+      this.closeButtonisShow = true;
+    },
+    closeForm: function() {
+      this.formisShow = false;
+      this.openButtonisShow = true;
+      this.closeButtonisShow = false;
+    }
+  }
+});
+
+// http request
+
+var testapp = new Vue({
+  el: "#testapp",
+  data() {
+    return {
+      testappreturn: null
+    };
+  },
+  methods: {
+    testHttpRequest: function() {
+      axios.get("https://").then(response => (this.testappreturn = response));
+    }
+  }
+});
+
+</script>
+</html>
+
+
+

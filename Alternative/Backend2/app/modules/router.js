@@ -61,7 +61,6 @@ class Router {
             app.use("/botsample", router);
             // Parse JSON bodies (as sent by API clients)
             app.use(express.json());
-
             app.post('/createguest', function (req, res, sdk) {
                 let first_name = "";
                 let last_name = "";
@@ -69,15 +68,9 @@ class Router {
                 last_name = req.body.last_name;
                 logger.log(first_name);
                 logger.log(last_name);
+                nodeSDK.createGuest(first_name,last_name);
 
-                nodeSDK.createGuest(first_name, last_name, req.body.selected_skill, res);
             });
-
-            app.post('/waitagent', function (req, res, sdk) {
-                let jid_c = req.body.jid_c;
-            });
-
-
         });
     }
 
@@ -109,6 +102,7 @@ class Router {
          * TO DO
          * Add more route to your bot if needed
          */
+
 
     }
 
