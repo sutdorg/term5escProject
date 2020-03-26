@@ -77,6 +77,7 @@ var FillForm = Vue.extend({
       this.guest_json["phone_number"] = this.phone_number;
       this.guest_json["selected_skill"] = this.selected_skill;
       console.log(this.guest_json);
+
       axios
         .post(this.post_url, this.guest_json, {
           headers: {
@@ -87,6 +88,8 @@ var FillForm = Vue.extend({
           // get guest id
           // then store in localStorage
           console.log(response);
+          // like normal ways to read json
+          localStorage.strId = response.data.strId;
         })
         .catch(function(error) {
           console.log(error);
@@ -140,7 +143,10 @@ var ChatRoom = Vue.extend({
         { from: "agent", me: false, content: "1 halo from agent" },
         { from: "agent", me: false, content: "May I help you? " }
       ],
-      inputContent: ""
+      inputContent: "",
+      // _i means infomation
+      contact_i: "",
+      conversation_i: ""
     };
   },
   methods: {
@@ -178,7 +184,6 @@ var ChatRoom = Vue.extend({
     }
   },
   mounted() {
-    // initialise rainbow sdk
     this.timer0 = setTimeout(() => {
       this.msgs.push({
         from: "agent",
@@ -186,6 +191,38 @@ var ChatRoom = Vue.extend({
         content: "Hi, " + localStorage.first_name + ", What can I do for you?"
       });
     }, 1000);
+
+    this.timer2 = setTimeout(() => {
+      this.msgs.push({
+        from: "agent",
+        me: false,
+        content: "Connecting..."
+      });
+    }, 2000);
+
+    // get Contact object using strId in localStorage
+    this.timer3 = setTimeout(() => {
+      rainbowSDK.contacts
+        .getContactById(localStorage.strId)
+        .then(function(res) {
+          // null mean no contact found
+          if (res != null) {
+            this.contact_i = res;
+            rainbowSDK.conversations
+              .openConversationForContact(this.contact_i)
+              .then(function(promise) {
+                if (promise != null) {
+                  this.conversation_i = promise;
+                } else {
+                  console.log("Fail to create a conversation using contact " + this.contact_i);
+                }
+              });
+          } else {
+            console.log("No contact found using strId " + localStorage.strId);
+          }
+        });
+    });
+
     // in miniseconds
     this.timer1 = setInterval(() => {
       setTimeout(this.get_msg, 1);
@@ -194,6 +231,7 @@ var ChatRoom = Vue.extend({
   beforeDestroy() {
     clearInterval(this.timer0);
     clearInterval(this.timer1);
+    clearInterval(this.timer2);
   }
 });
 
@@ -201,16 +239,14 @@ var Bye = Vue.extend({
   template: `    <div class="bye">
   <p>Thank you for contacting us.</p>
   <p>Wish you have a good day</p>
-</div>`,
-})
-
-
+</div>`
+});
 
 const routes = [
   { path: "/", component: LiveChatButton },
   { path: "/fillform", component: FillForm },
-  { path: "/chatroom", component: ChatRoom},
-  { path: "/bye", component: Bye}
+  { path: "/chatroom", component: ChatRoom },
+  { path: "/bye", component: Bye }
 ];
 
 const router = new VueRouter({
