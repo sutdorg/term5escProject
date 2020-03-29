@@ -17,14 +17,8 @@ angular.module("sample").component("rbxConnection", {
       saveToStorage();
       // send http post to backend to create guest user
       // get back guest user id or promise object(JSON file)
-      const body = { 'guest_name' : $scope.user.name };
-      /*const httpOptions = {
-        headers: new HttpHeaders({
-          'Content-Type':  'application/json'
-        })
-      };*/
+      const body = { 'first_name' : $scope.user.name, 'last_name' : $scope.user.name};
       $http.post("http://localhost:3002/createguest", body).then(function (response) {
-        // This function handles success
         if(response.data) {
           $scope.isLoading = false;
           console.log("success");

@@ -28,6 +28,7 @@ class SDK {
 
             this.nodeSDK.events.on("rainbow_onready", () => {
                 this.initAgents();
+                //this.endCall('d6aabfd1a348467a990f0dfcb94b5218@sandbox-all-in-one-rbx-prod-1.rainbow.sbg');
             });
 
             this.nodeSDK.start().then(() => {
@@ -39,7 +40,7 @@ class SDK {
     }
 
     createGuest(first_name, last_name, skill, resFE){
-        this.nodeSDK.admin.createGuestUser(first_name, last_name, "en-US", 1000).then((guest) => {
+        this.nodeSDK.admin.createGuestUser(first_name, last_name, "en-US", 604800).then((guest) => {
             logger.log("guest created");
             logger.log(guest);
             axios.defaults.headers.post['Content-Type'] = 'application/json';
@@ -57,15 +58,18 @@ class SDK {
                     logger.log(res);
                     logger.log(res.data);
                     logger.log(res.data.jid_c);
-                    logger.log(guest.jid_im)
+                    logger.log(guest.jid_im);
                     logger.log(res.data.jid_a);
                     logger.log(res.data.agentAvailable);
+                    //let a = {"agentAvailable": res.data.agentAvailable, "jid_c": guest.jid_im, "jid_a": res.data.jid_a, "guest_login":guest.loginEmail, }
                     resFE.send({"agentAvailable": res.data.agentAvailable, "jid_c": guest.jid_im, "jid_a": res.data.jid_a});
                 })
                 .catch(error => {
+                    resFE.send("error");
                     logger.log(error);
                 });
         }).catch((err) => {
+            resFE.send("error");
             logger.log("guest creation fail");
         });
     }
@@ -76,12 +80,14 @@ class SDK {
         contacts.forEach(function(entry) {
             logger.log(entry);
             axios.post('http://10.12.66.69:1337/add/agent', {
-                "AgentID": entry.jid_im,
+                "AgentID": 0,
                 "Skill1": "Tablet",
                 "Skill2": "Phone",
                 "Skill3": "Computer",
                 "Name": entry.displayName,
-                "AvailStatus": entry.presence
+                "AvailStatus": entry.presence,
+                "NumOfCus" : 0,
+                "jid_a" :entry.jid_im
             })
             .then(res => {
                 logger.log(res);
@@ -90,6 +96,18 @@ class SDK {
                 logger.log(error);
             });
         });
+    }
+
+    endCall(jid_a){
+        axios.post('http://10.12.66.69:1337/cRes', {
+            "jid_a" :jid_a
+        })
+            .then(res => {
+                logger.log(res.data);
+            })
+            .catch(error => {
+                logger.log(error);
+            });
     }
 
     restart() {
