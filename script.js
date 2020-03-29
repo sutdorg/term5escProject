@@ -1,12 +1,9 @@
-//use ejs for the frontend
-//create guest
-//send message
 var express = require('express');
 var mysql = require('mysql');
 var app = express();
 const bodyparser = require('body-parser');
 app.use(bodyparser.json());
-
+//to set up the connection
 var connection = mysql.createConnection({
     host: 'localhost',
     user:'root',
@@ -15,7 +12,7 @@ var connection = mysql.createConnection({
     port:'3306',
     multipleStatements:true
 });
-
+//to test the connection
 connection.connect(function(error){
     if(!!error){
         console.log('Error');
@@ -24,61 +21,12 @@ connection.connect(function(error){
         console.log('connected');
     }
 });
-//check for the availability of agents
-app.get('/getstatus',function(req,res){
-    connection.query("SELECT * FROM Agent_Table",function(error,result,fields){
-        if(!!error){
-            console.log("fail to retrieve from agent_table");
-        }
-        else{
-            console.log("agent retrieved");
-            for(i in result){
-                if(result[i].Skill1 =="Phone" || result[i].Skill2 == "Phone" || result[i].Skill3 == "Computer"){
-                    console.log(result[i].AvailStatus);
-                }
-                
-            }
-        }
-        res.send(result);
-    });
-});
-//get skill from skill table
-app.get('/getskills',function(req,res){
-    let skilllist= ['one','two','three','four','five'];
-    connection.query("SELECT * FROM Skills",function(error,result,fields){
-        if(!!error){
-            console.log("cannot retrieve the skills");
-        }
-        else{
-            console.log("retrieve the skills");
-            for (i in result){
-                skilllist[i] = result[i].Skill;
-                console.log(skilllist);
-                console.log(skilllist[0]);
-            }
-            res.send(result);
-        }
-    
-});
-});
-//get customer information from Q1
-app.get('/Q1/:id',function(req,res){
-    connection.query("SELECT * FROM Q1 WHERE CustomerID = ?",[req.params.id],function(error,rows,fields){
-        if(!!error){
-            console.log('failed to retrieve the customer from Q1');
-        }
-        else{
-            console.log('succeeded in getting the customer from Q1');
-            res.send(rows);
-        }
-    });
-});
-
 //Queueing of the Requests and connecting if agent is free once i receieve a http post request from Frontend/NodeJS backend
 app.post('/cusreq', function(req,res){
     let sklist= ['one','two','three','four','five'];    
     connection.query("SELECT * FROM Skills",function(error,result,fields){
         let cushead = req.header('sk');
+        let cusid = req.header('jid_c');
         let cus = req.body;
         var check = 0;
         var cussql1 = "SET @CustomerID = ?;SET @FirstName = ?; SET @LastName = ?; SET @StrID = ?; SET @JID_IM =?; SET @Skill = ?; \
@@ -89,9 +37,9 @@ app.post('/cusreq', function(req,res){
         CALL EDITQ33ENTRY(@CustomerID,@FirstName,@LastName,@StrID,@JID_IM,@Skill);"; 
         var agentsql = "SET @AgentID = ?;SET @AvailStatus = ?;SET @NumOfCus = ?; \
         CALL AGENTSTATUS(@AgentID,@AvailStatus,@NumOfCus);";
-       
         if(!!error){
             console.log("cannot retrieve the skills");
+            res.send("ERROR: Failed to Retrieve Skills");
         }
         else{
             for (i in result){
@@ -102,28 +50,22 @@ app.post('/cusreq', function(req,res){
                     console.log("fail to retrieve from agent_table");
                 }
                 else{
-                    console.log("agent retrieved");
+                    var earliestTime = null;
+                    var agentChosen = null;
                     for(i in rows){
                         if(rows[i].Skill1 == cushead || rows[i].Skill2 == cushead || rows[i].Skill3 == cushead){
                             console.log("status " + rows[i].AvailStatus);
                             if(rows[i].AvailStatus == 'Available'){
                                 console.log(rows[i].Name + " connect to Customer " + cus.FirstName);
-                                res.send(rows[i].Name + " connect to Customer " + cus.FirstName);
-                                check = 1;
-                                console.log('check value changed to '+ check);
-                                let ag = { AgentID: rows[i].AgentID, AvailStatus: 'Busy', NumOfCus: rows[i].NumOfCus+1 }
-                                connection.query(agentsql,[ag.AgentID,ag.AvailStatus,ag.NumOfCus],function(error,rows,fields){
-                                    //callback function
-                                    if(!!error){
-                                        console.log("update agent status fail");
-                                        console.log(err);
-                                    }
-                                    else{
-                                        console.log('update agent status success');
-                                
+                                //res.send(rows[i].Name + " connect to Customer " + cus.FirstName);
+                                if(earliestTime == null){
+                                    earliestTime = rows[i].TimeAvail;
+                                    agentChosen = i;
                                 }
-                                    });
-                                break;
+                                else if(earliestTime>rows[i].TimeAvail){
+                                    earliestTime = rows[i].TimeAvail;
+                                    agentChosen = i;
+                                }
                             }
                             else{
                                 console.log(rows[i].AgentID + ' is not available right now');
@@ -133,6 +75,35 @@ app.post('/cusreq', function(req,res){
                             console.log(rows[i].AgentID + ' does not have the required skills');
                         }
                     }
+                    console.log("TESTING" + earliestTime + " " + agentChosen );
+                    if(agentChosen != null){
+                        check = 1;
+                        let ag = { AgentID: rows[agentChosen].AgentID, AvailStatus: 'Busy', NumOfCus: rows[agentChosen].NumOfCus+1 }
+                        connection.query(agentsql,[ag.AgentID,ag.AvailStatus,ag.NumOfCus],function(error,rows,fields){
+                            //callback function
+                            if(!!error){
+                                console.log("update agent status fail");
+                                console.log(err);
+                            }
+                            else{
+                                var realagentChosen = parseInt(agentChosen)+1;
+                                console.log(realagentChosen);
+                                console.log('update agent status success');
+                                connection.query("SELECT * FROM Agent_Table WHERE AgentID = ?",[realagentChosen] ,function(error,result,fields){
+                                    if(!!error){
+                                        console.log('Error in query AgentTable');
+                                    }
+                                    else{
+                                        console.log(result[0].jid_a);
+                                        res.send({jid_a:result[0].jid_a,jid_c:cusid,agentAvailable:true});
+                                    }
+                                });
+                                
+                        }
+                            });
+                    }
+
+
                     if(check == 0){
                         console.log('went into the check loop');
                         if(cushead == sklist[0]){
@@ -143,7 +114,7 @@ app.post('/cusreq', function(req,res){
                                 }
                                 else{
                                     console.log("update Q1 success");
-                                    res.send("Q1 updated");
+                                    res.send({agentAvailable:false});
                                     
                                     }
                                 
@@ -158,7 +129,7 @@ app.post('/cusreq', function(req,res){
                                 }
                                 else{
                                     console.log("update Q2 success");
-                                    res.send("Q2 updated");
+                                    res.send({agentAvailable:false});
                                     
                                     }
                                 
@@ -174,7 +145,7 @@ app.post('/cusreq', function(req,res){
                                 }
                                 else{
                                     console.log("update Q3 success");
-                                    res.send("Q3 updated");
+                                    res.send({agentAvailable:false});
                                     
                                     }
                                 
@@ -188,19 +159,124 @@ app.post('/cusreq', function(req,res){
                     
                 }
             });
-
-
-
         }
-
     });
-
 });
+//promisifying the request(solve the async issue)
+const mysql2 = require( 'mysql' );
+class Database {
+    constructor( config ) {
+        this.connection = mysql2.createConnection( config );
+    }
+    query( sql, args ) {
+        return new Promise( ( resolve, reject ) => {
+            this.connection.query( sql, args, ( err, rows ) => {
+                if ( err )
+                    return reject( err );
+                resolve( rows );
+            } );
+        } );
+    }
+    close() {
+        return new Promise( ( resolve, reject ) => {
+            this.connection.end( err => {
+                if ( err )
+                    return reject( err );
+                resolve();
+            } );
+        } );
+    }
+}
+//set up new database ref
+database = new Database({
+    host: 'localhost',
+    user:'root',
+    password: 'root',
+    database: 'queues',
+    port:'3306',
+    multipleStatements:true
+})
+//resolution of request will result in the agent being connected to another customer from the Queue that his skills are applicable to 
+app.post('/cRes',function(req,res){
+    let sklist= ['one','two','three','four','five'];
+    var cuslist =[];
+    var TopCusList = [];
+    var chosenCusList =[];
+    database.query('SELECT * FROM Skills')
+    .then(rows =>{
+        someRows = rows;
+        for(i in rows){
+            sklist[i] = rows[i].Skill;
+        }
+        return database.query("SELECT * FROM Agent_Table WHERE jid_a=?",[req.body.jid_a]);
+    })
+    .then(rows =>{
+        for (i in sklist){
+            if(rows[0].Skill1 == sklist[i] || rows[0].Skill2 == sklist[i] || rows[0].Skill3 == sklist[i]){
+                var ans = parseInt(i);
+                cuslist.push(ans);
+            }
+        }
+        return database.query("SELECT MIN(CustomerID) FROM Q1");
+    })
+    .then(rows =>{
+        return database.query("SELECT * FROM Q1 WHERE CustomerID =?",[rows[0]["MIN(CustomerID)"]]);
+    })
+    .then(rows=>{
+        TopCusList.push(rows);
+        return database.query("SELECT MIN(CustomerID) FROM Q2");
+    })
+    .then(rows=>{
+        return database.query("SELECT * FROM Q2 WHERE CustomerID =?",[rows[0]["MIN(CustomerID)"]]);
+    })
+    .then(rows=>{
+        TopCusList.push(rows);
+        return database.query("SELECT MIN(CustomerID) FROM Q3");
+    })
+    .then(rows=>{
+        return database.query("SELECT * FROM Q3 WHERE CustomerID =?",[rows[0]["MIN(CustomerID)"]]);
+    })
+    .then(rows=>{
+        TopCusList.push(rows);
+        return database.close();
+    })
+    .then(()=>{
+        for(j in cuslist){
+            chosenCusList.push(TopCusList[cuslist[j]]);
+        }
+        var ans = chooseCustomer(chosenCusList);
+        var anstosend = ans[0];
+        res.send({jid_a:req.body.jid_a, jid_c:anstosend.JID_IM, agentAvailable : true});
+    })
+})
+
+//Function to choose which Customer to pick from the Top in each list
+function chooseCustomer(cusChosenList){
+    var mintime = null;
+    var cusChosen = null;
+    for (i in cusChosenList){
+        if(mintime == null){
+            mintime = cusChosenList[i][0].TimeRegistered;
+            cusChosen = cusChosenList[i];
+        }
+        else if(cusChosenList[i][0].TimeRegistered < mintime){
+            mintime = cusChosenList[i][0].TimeRegistered;
+            cusChosen = cusChosenList[i];
+        }
+    }
+return cusChosen;
+}
+
+
+
+
+
+
+/* THIS IS THE GROUP TO GET CUSTOMERS/AGENT */
 
 //get customer from queue 1
 app.get('/skill_1/:id',function(req,resp){
-    connection.query("SELECT * FROM Queue_1 WHERE CustomerID = ?",[req.params.id] ,function(error,rows,fields){
-        //callback function
+    connection.query("SELECT * FROM Q1 WHERE CustomerID = ?",[req.params.id] ,function(error,rows,fields){
         if(!!error){
             console.log('Error in query Queue1');
         }
@@ -208,26 +284,12 @@ app.get('/skill_1/:id',function(req,resp){
             console.log('successful query for the Queue1\n');
             console.log(rows);
             resp.send(rows);
-            //can use update from CRUD to send data
         }
     });
-    // connection.query("SELECT * FROM Queue_1",function(error,rows,fields){
-    //     //callback function
-    //     if(!!error){
-    //         console.log('Error in query Queue1');
-    //     }
-    //     else{
-    //         console.log('successful query for the Queue1\n');
-    //         console.log(rows);
-    //         //can use update from CRUD to send data
-    //     }
-    // });
     });
-
 // get Customer from Queue 2
 app.get('/skill_2/:id',function(req,resp){
-    connection.query("SELECT * FROM Queue_2 WHERE CustomerID = ?",[req.params.id] ,function(error,rows,fields){
-        //callback function
+    connection.query("SELECT * FROM Q2 WHERE CustomerID = ?",[req.params.id] ,function(error,rows,fields){
         if(!!error){
             console.log('Error in query Queue2');
         }
@@ -235,27 +297,12 @@ app.get('/skill_2/:id',function(req,resp){
             console.log('successful query for the Queue2\n');
             console.log(rows);
             resp.send(rows);
-            //can use update from CRUD to send data
         }
     });
-    // connection.query("SELECT * FROM Queue_1",function(error,rows,fields){
-    //     //callback function
-    //     if(!!error){
-    //         console.log('Error in query Queue1');
-    //     }
-    //     else{
-    //         console.log('successful query for the Queue1\n');
-    //         console.log(rows);
-    //         //can use update from CRUD to send data
-    //     }
-    // });
-    
-
 });
 // Get Customer from Queue 3
 app.get('/skill_3/:id',function(req,resp){
-    connection.query("SELECT * FROM Queue_3 WHERE CustomerID = ?",[req.params.id] ,function(error,rows,fields){
-        //callback function
+    connection.query("SELECT * FROM Q3 WHERE CustomerID = ?",[req.params.id] ,function(error,rows,fields){
         if(!!error){
             console.log('Error in query Queue3');
         }
@@ -263,42 +310,13 @@ app.get('/skill_3/:id',function(req,resp){
             console.log('successful query for the Queue3\n');
             console.log(rows);
             resp.send(rows);
-            //can use update from CRUD to send data
         }
     });
 });
-    // Get Skill from Skills
-app.get('/skill_3/:id',function(req,resp){
-    connection.query("SELECT * FROM Queue_3 WHERE CustomerID = ?",[req.params.id] ,function(error,rows,fields){
-        //callback function
-        if(!!error){
-            console.log('Error in query Queue3');
-        }
-        else{
-            console.log('successful query for the Queue3\n');
-            console.log(rows);
-            resp.send(rows);
-            //can use update from CRUD to send data
-        }
-    });
-    // connection.query("SELECT * FROM Queue_1",function(error,rows,fields){
-    //     //callback function
-    //     if(!!error){
-    //         console.log('Error in query Queue1');
-    //     }
-    //     else{
-    //         console.log('successful query for the Queue1\n');
-    //         console.log(rows);
-    //         //can use update from CRUD to send data
-    //     }
-    // });
-    
 
-});
 // Get Agent from AgentTable
 app.get('/agent/:id',function(req,resp){
     connection.query("SELECT * FROM Agent_Table WHERE AgentID = ?",[req.params.id] ,function(error,rows,fields){
-        //callback function
         if(!!error){
             console.log('Error in query AgentTable');
         }
@@ -306,302 +324,89 @@ app.get('/agent/:id',function(req,resp){
             console.log('successful query for the AgentTable\n');
             console.log(rows);
             resp.send(rows);
-            //can use update from CRUD to send data
         }
     });
-    // connection.query("SELECT * FROM Queue_1",function(error,rows,fields){
-    //     //callback function
-    //     if(!!error){
-    //         console.log('Error in query Queue1');
-    //     }
-    //     else{
-    //         console.log('successful query for the Queue1\n');
-    //         console.log(rows);
-    //         //can use update from CRUD to send data
-    //     }
-    // });
-    
-
 });
+/********************************************************************************************************************************/
+
+/*DELETE REQUESTS CUSTOMERS IN QUEUES AS WELL AS AGENTS*/ 
 
 // Delete Customers from queue 1
-app.delete('/delete/skill_1/cID/:id',function(req,resp){
-    connection.query("DELETE FROM Queue_1 WHERE CustomerID= ?",[req.params.id],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        console.log(err);
-    }
-    else{
-        console.log('successful Deletion of id\n');
-        resp.send('deleted entry');
-
-}
+app.delete('/delete/skill_1/cID/:id',function(req,res){
+    connection.query("DELETE FROM Q1 WHERE CustomerID= ?",[req.params.id],function(error,rows,fields){
+        if(!!error){
+            console.log(err);
+        }
+        else{
+            console.log('successful Deletion of id\n');
+            res.send('deleted entry'); 
+        }
     });
 });
 //Delete Customers from queue 2
-app.delete('/delete/skill_2/cID/:id',function(req,resp){
-    connection.query("DELETE FROM Queue_2 WHERE CustomerID= ?",[req.params.id],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        console.log(err);
-    }
-    else{
-        console.log('successful Deletion of id\n');
-        resp.send('deleted entry');
-
-}
+app.delete('/delete/skill_2/cID/:id',function(req,res){
+    connection.query("DELETE FROM Q2 WHERE CustomerID= ?",[req.params.id],function(error,rows,fields){
+        if(!!error){
+            console.log("error");
+            res.send("ERROR,no Entry");
+        }
+        else{
+            console.log('successful Deletion of id\n');
+            res.send('deleted entry');
+        }
     });
 });
 //Delete Customers from queue 3
-app.delete('/delete/skill_3/cID/:id',function(req,resp){
-    connection.query("DELETE FROM Queue_3 WHERE CustomerID= ?",[req.params.id],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        console.log(err);
-
-    }
-    else{
-        console.log('successful Deletion of id\n');
-        resp.send('deleted entry');
-
-}
+app.delete('/delete/skill_3/cID/:id',function(req,res){
+    connection.query("DELETE FROM Q3 WHERE CustomerID= ?",[req.params.id],function(error,rows,fields){
+        if(!!error){
+            console.log(err);
+        }
+        else{
+            console.log('successful Deletion of id\n');
+            res.send('deleted entry');
+        }
     });
 });
 //Delete Agent from AgentTable
-app.delete('/delete/agent/cID/:id',function(req,resp){
+app.delete('/delete/agent/cID/:id',function(req,res){
     connection.query("DELETE FROM Agent_Table WHERE AgentID= ?",[req.params.id],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        console.log(err);
-
-    }
-    else{
-        console.log('successful Deletion of id from agent\n');
-        resp.send('deleted entry');
-
-}
+        if(!!error){
+            console.log(error);
+        }
+        else{
+            console.log('successful Deletion of id from agent\n');
+            res.send('deleted entry');
+        }
     });
 });
 
-//Add Customer to Queue Depending on skill
+/********************************************************************************************************************************************************/
 
-
-
-
-
-
-
-//ADD Customer in Queue_1
-app.post('/add/s1',function(req,resp){
-    let cus = req.body;
-    var sql = "SET @CustomerID = ?;SET @Name = ?;SET @ContactInformation = ?; \
-    CALL EDITQ1ENTRY(@CustomerID,@Name,@ContactInformation);";
-    connection.query(sql,[cus.CustomerID,cus.Name,cus.ContactInformation],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        console.log('update of id\n');
-        rows.forEach(element => {
-            if(element.constructor == Array)
-            resp.send('Inserted Customer id : ' +element[0].CustomerID);
-        });
-
-        resp.send('add success');
-
-}
-    });
-});
-//ADD Customer in Queue_2
-app.post('/add/s2',function(req,resp){
-    let cus = req.body;
-    var sql = "SET @CustomerID = ?;SET @Name = ?;SET @ContactInformation = ?; \
-    CALL EDITQ2ENTRY(@CustomerID,@Name,@ContactInformation);";
-    connection.query(sql,[cus.CustomerID,cus.Name,cus.ContactInformation],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        console.log('update of id\n');
-        rows.forEach(element => {
-            if(element.constructor == Array)
-            resp.send('Inserted Customer id : ' +element[0].CustomerID);
-        });
-
-        resp.send('add success');
-
-}
-    });
-});
-//ADD Customer in Queue_3
-app.post('/add/s3',function(req,resp){
-    let cus = req.body;
-    var sql = "SET @CustomerID = ?;SET @Name = ?;SET @ContactInformation = ?; \
-    CALL EDITQ3ENTRY(@CustomerID,@Name,@ContactInformation);";
-    connection.query(sql,[cus.CustomerID,cus.Name,cus.ContactInformation],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        console.log('update of id\n');
-        rows.forEach(element => {
-            if(element.constructor == Array)
-            resp.send('Inserted Customer id : ' +element[0].CustomerID);
-        });
-
-        resp.send('add success');
-
-}
-    });
-});
-
-//ADD Agent in Agent_Table
+//ADD Agent into Agent_Table
 app.post('/add/agent',function(req,resp){
     let ag = req.body;
-    var sql = "SET @AgentID = ?;SET @Skill1 = ?;SET @Skill2 = ?;SET @Skill3 = ?;SET @BubbleID = ?;SET @Name = ?;SET @AvailStatus = ?;SET @NumOfCus = ?; \
-    CALL EDITAGENTENTRY(@AgentID,@Skill1,@Skill2,@Skill3,@BubbleID,@Name,@AvailStatus,@NumOfCus);";
-    connection.query(sql,[ag.AgentID,ag.Skill1,ag.Skill2,ag.Skill3,ag.BubbleID,ag.Name,ag.AvailStatus,ag.NumOfCus],function(error,rows,fields){
+    var sql = "SET @AgentID = ?;SET @Skill1 = ?;SET @Skill2 = ?;SET @Skill3 = ?;SET @Name = ?;SET @AvailStatus = ?;SET @NumOfCus = ?;SET @jid_a =?; \
+    CALL CREATEAGENT(@AgentID,@Skill1,@Skill2,@Skill3,@Name,@AvailStatus,@NumOfCus,@jid_a);";
+    connection.query(sql,[ag.AgentID,ag.Skill1,ag.Skill2,ag.Skill3,ag.Name,ag.AvailStatus,ag.NumOfCus,ag.jid_a],function(error,rows,fields){
     //callback function
     if(!!error){
         resp.send("update fail");
-        console.log(err);
+        console.log(error);
     }
     else{
         console.log('update of id\n');
-        rows.forEach(element => {
-            if(element.constructor == Array)
-            resp.send('Inserted Agent id : ' +element[0].AgentID);
-        });
-
         resp.send('add success');
 
 }
     });
 });
-
-
-
-// //ADD new agent in Agentlist
-// app.post('/add/s3',function(req,resp){
-//     let cus = req.body;
-//     var sql = "SET @CustomerID = ?;SET @Name = ?;SET @ContactInformation = ?; \
-//     CALL EDITQ3ENTRY(@CustomerID,@Name,@ContactInformation);";
-//     connection.query(sql,[cus.CustomerID,cus.Name,cus.ContactInformation],function(error,rows,fields){
-//     //callback function
-//     if(!!error){
-//         resp.send("update fail");
-//         console.log(err);
-//     }
-//     else{
-//         console.log('update of id\n');
-//         rows.forEach(element => {
-//             if(element.constructor == Array)
-//             resp.send('Inserted Customer id : ' +element[0].CustomerID);
-//         });
-
-//         resp.send('add success');
-
-// }
-//     });
-// });
-
-// req.cmd, req.create, req.update. req.del
-// app.post('/crud', function(req, res){
-//     var cmd = req.cmd;
-//     var sql;
-//     switch(cmd){
-//         case 1:
-//             sql = "UPDATE .....";
-//         case 2:
-
-//     }
-// });
-
-
-//Update Employee in Queue_1
-app.put('/update/s1',function(req,resp){
-    let cus = req.body;
-    var sql = "SET @CustomerID = ?;SET @Name = ?;SET @ContactInformation = ?; \
-    CALL EDITQ1ENTRY(@CustomerID,@Name,@ContactInformation);";
-    connection.query(sql,[cus.CustomerID,cus.Name,cus.ContactInformation],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        console.log('update of id\n');
-        resp.send('update success');
-
-}
-    });
-});
-//Update Employee in Queue_2
-app.put('/update/s2',function(req,resp){
-    let cus = req.body;
-    var sql = "SET @CustomerID = ?;SET @Name = ?;SET @ContactInformation = ?; \
-    CALL EDITQ2ENTRY(@CustomerID,@Name,@ContactInformation);";
-    connection.query(sql,[cus.CustomerID,cus.Name,cus.ContactInformation],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        console.log('update of id\n');
-        resp.send('update success');
-
-}
-    });
-});
-//Update Employee in Queue_2
-app.put('/update/s3',function(req,resp){
-    let cus = req.body;
-    var sql = "SET @CustomerID = ?;SET @Name = ?;SET @ContactInformation = ?; \
-    CALL EDITQ3ENTRY(@CustomerID,@Name,@ContactInformation);";
-    connection.query(sql,[cus.CustomerID,cus.Name,cus.ContactInformation],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        console.log('update of id\n');
-        resp.send('update success');
-
-}
-    });
-});
-
-//UPDATE Agent in Agent_Table
-app.put('/update/agent',function(req,resp){
-    let ag = req.body;
-    var sql = "SET @AgentID = ?;SET @Skill1 = ?;SET @Skill2 = ?;SET @Skill3 = ?;SET @BubbleID = ?;SET @Name = ?;SET @AvailStatus = ?;SET @NumOfCus = ?; \
-    CALL EDITAGENTENTRY(@AgentID,@Skill1,@Skill2,@Skill3,@BubbleID,@Name,@AvailStatus,@NumOfCus);";
-    connection.query(sql,[ag.AgentID,ag.Skill1,ag.Skill2,ag.Skill3,ag.BubbleID,ag.Name,ag.AvailStatus,ag.NumOfCus],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        resp.send('update success');
-
-}
-    });
-});
-//Update the Availability status of a agent
+//SET AGENT TO AVAILABLE
 app.patch('/update/agent/avail',function(req,resp){
     let ag = req.body;
-    var sql = "SET @AgentID = ?;SET @AvailStatus = ?;SET @NumOfCus = ?; \
-    CALL EDITAGENTAVAILENTRY(@AgentID,@AvailStatus,@NumOfCus);";
-    connection.query(sql,[ag.AgentID,ag.AvailStatus,ag.NumOfCus],function(error,rows,fields){
+    var sql = "SET @jid_a = ?;SET @AvailStatus = ?; \
+    CALL EDITAGENTAVAILENTRY(@jid_a,@AvailStatus);";
+    connection.query(sql,[ag.jid_a,ag.AvailStatus],function(error,rows,fields){
     //callback function
     if(!!error){
         resp.send("update fail");
@@ -614,4 +419,5 @@ app.patch('/update/agent/avail',function(req,resp){
 }
     });
 });
+
 app.listen(1337);
