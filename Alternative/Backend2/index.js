@@ -11,7 +11,7 @@ const defaultServer = require("./app/config/router.json");
 
 const json = require('comment-json');
 const fs = require('fs');
-const botfile = fs.readFileSync("./app/config/bot.json");
+const botfile = fs.readFileSync("./app/config/config.json");
 let txt = botfile.toString();
 let bot = json.parse(txt);
 

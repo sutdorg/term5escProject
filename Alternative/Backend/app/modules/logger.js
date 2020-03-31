@@ -1,7 +1,7 @@
 "use strict";
 
 const winston = require("winston");
-const LOG_ID = "STARTER/LOGS - ";
+const LOG_ID = "modules/logger.js - ";
 
 const tsFormat = () => {
         let date = new Date();

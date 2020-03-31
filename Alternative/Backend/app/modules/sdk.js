@@ -5,30 +5,42 @@ const logger = require('./logger');
 
 const axios = require('axios');
 
-const LOG_ID = "STARTER/SDKN - ";
+const LOG_ID = "modules/sdk.js - ";
 
 class SDK {
-    
+
     constructor() {
         logger.log("debug", LOG_ID + "constructor()");
         this.nodeSDK = null;
     }
 
-    start(bot, argv) {
+    get state() {
+        return this.nodeSDK.state;
+    }
+
+    get version() {
+        return this.nodeSDK.version;
+    }
+
+    get sdk() {
+        return this.nodeSDK;
+    }
+
+    start(config, argv) {
         return new Promise((resolve) => {
 
-            if(argv.length >= 4) {
-                bot.credentials.login = argv[2];
-                bot.credentials.password = argv[3];
-                logger.log("info", LOG_ID + "using " + bot.credentials.login  + " (forced by CLI)");
+            if (argv.length >= 4) {
+                config.credentials.login = argv[2];
+                config.credentials.password = argv[3];
+                logger.log("info", LOG_ID + "using " + config.credentials.login + " (forced by CLI)");
             }
 
-             // Start the SDK
-            this.nodeSDK = new NodeSDK(bot);
+            // Start the SDK
+            this.nodeSDK = new NodeSDK(config);
 
             this.nodeSDK.events.on("rainbow_onready", () => {
+                logger.log("debug", LOG_ID + "Initialize agents");
                 this.initAgents();
-                //this.endCall('d6aabfd1a348467a990f0dfcb94b5218@sandbox-all-in-one-rbx-prod-1.rainbow.sbg');
             });
 
             this.nodeSDK.start().then(() => {
@@ -36,13 +48,27 @@ class SDK {
                 resolve();
             });
 
+            this.nodeSDK.events.on("rainbow_oncontactpresencechanged", (contact) => {
+                logger.log("debug", LOG_ID + "Presence Changed");
+                logger.log("debug", LOG_ID + contact.displayName + " presence changed to " + contact.presence);
+                axios.patch('http://10.12.66.69:1337/update/agent/avail', {
+                    "jid_a": contact.jid_im,
+                    "AvailStatus": contact.presence
+                })
+                    .then(res => {
+                        logger.log("debug", LOG_ID + res);
+                    })
+                    .catch(error => {
+                        logger.log("error", LOG_ID + error);
+                    });
+            });
         });
     }
 
-    createGuest(first_name, last_name, skill, resFE){
-        this.nodeSDK.admin.createGuestUser(first_name, last_name, "en-US", 604800).then((guest) => {
-            logger.log("guest created");
-            logger.log(guest);
+    createGuest(first_name, last_name, skill, resFE) {
+        logger.log("debug", LOG_ID + "Creating guest...");
+        this.nodeSDK.admin.createGuestUser(first_name, last_name, "en-US", 86400).then((guest) => {
+            logger.log("debug", LOG_ID + "Guest Created, updating database...");
             axios.defaults.headers.post['Content-Type'] = 'application/json';
             axios.defaults.headers.post['sk'] = "Tablet";
             axios.defaults.headers.post['jid_c'] = guest.jid_im;
@@ -51,63 +77,100 @@ class SDK {
                 "FirstName": guest.firstName,
                 "LastName": guest.lastName,
                 "StrID": guest.id,
-                "JID_IM":  guest.jid_im,
-                "Skill": "Tablet"
+                "JID_IM": guest.jid_im,
+                "Skill": skill
             })
                 .then(res => {
-                    logger.log(res);
-                    logger.log(res.data);
-                    logger.log(res.data.jid_c);
-                    logger.log(guest.jid_im);
-                    logger.log(res.data.jid_a);
-                    logger.log(res.data.agentAvailable);
-                    //let a = {"agentAvailable": res.data.agentAvailable, "jid_c": guest.jid_im, "jid_a": res.data.jid_a, "guest_login":guest.loginEmail, }
-                    resFE.send({"agentAvailable": res.data.agentAvailable, "jid_c": guest.jid_im, "jid_a": res.data.jid_a});
+                    logger.log("debug", LOG_ID + "Database updated, responding to fronted...");
+                    let a = {
+                        "agentAvailable": res.data.agentAvailable,
+                        "jid_c": guest.jid_im,
+                        "jid_a": res.data.jid_a,
+                        "guest_login": guest.loginEmail,
+                        "guest_password": guest.password,
+                        "id_c": guest.id
+                    };
+                    resFE.send(a);
+                    logger.log("debug", LOG_ID + "Responded to frontend");
                 })
                 .catch(error => {
                     resFE.send("error");
-                    logger.log(error);
+                    logger.log("error", LOG_ID + error);
                 });
         }).catch((err) => {
             resFE.send("error");
-            logger.log("guest creation fail");
+            logger.log("error", LOG_ID + "guest creation fail");
+            logger.log("error", LOG_ID + err);
         });
     }
 
-    initAgents(){
-        let contacts = this.nodeSDK.contacts.getAll();
-        logger.log(contacts);
-        contacts.forEach(function(entry) {
-            logger.log(entry);
-            axios.post('http://10.12.66.69:1337/add/agent', {
-                "AgentID": 0,
-                "Skill1": "Tablet",
-                "Skill2": "Phone",
-                "Skill3": "Computer",
-                "Name": entry.displayName,
-                "AvailStatus": entry.presence,
-                "NumOfCus" : 0,
-                "jid_a" :entry.jid_im
-            })
-            .then(res => {
-                logger.log(res);
-            })
-            .catch(error => {
-                logger.log(error);
+    initAgents() {
+        logger.log("debug", LOG_ID + "Initializing agents...");
+        this.nodeSDK.admin.getAllUsers("full").then((contacts) => {
+            contacts.forEach(function(entry) {
+                if(!(entry.roles.includes("admin") || entry.roles.includes("guest"))){
+                    logger.log("debug", LOG_ID + "Adding " + entry.displayName + " to database...");
+                    axios.post('http://10.12.66.69:1337/add/agent', {
+                        "AgentID": 0,
+                        "Skill1": entry.tags[0],
+                        "Skill2": entry.tags[1],
+                        "Skill3": entry.tags[2],
+                        "Name": entry.displayName,
+                        "AvailStatus": entry.presence,
+                        "NumOfCus": 0,
+                        "jid_a": entry.jid_im
+                    })
+                        .then(res => {
+                            logger.log("debug", LOG_ID + res);
+                        })
+                        .catch(error => {
+                            logger.log("error", LOG_ID + error);
+                        });
+                }
             });
+        }).catch((err) => {
+            logger.log("error", LOG_ID + err);
         });
     }
 
-    endCall(jid_a){
-        axios.post('http://10.12.66.69:1337/cRes', {
-            "jid_a" :jid_a
-        })
-            .then(res => {
-                logger.log(res.data);
+    endCall(jid_a, id_c, resFE) {
+        logger.log("debug", LOG_ID + "Ending call...");
+        this.nodeSDK.admin.deleteUser(id_c).then((user) => {
+            axios.post('http://10.12.66.69:1337/cRes', {
+                "jid_a": jid_a
             })
-            .catch(error => {
-                logger.log(error);
-            });
+                .then(res => {
+                    logger.log("debug", LOG_ID + res);
+                    logger.log("debug", LOG_ID + "User deleted")
+                    resFE.send("User deleted");
+                })
+                .catch(error => {
+                    logger.log("error", LOG_ID + error);
+                });
+        }).catch((err) => {
+            resFE.send("Error");
+            logger.log("error", LOG_ID + err);
+        });
+    }
+
+    cancel(id_c, resFE) {
+        logger.log("debug", LOG_ID + "Cancelling call...");
+        this.nodeSDK.admin.deleteUser(id_c).then((user) => {
+            axios.post('http://10.12.66.69:1337/cancel', {
+                "id_c": id_c
+            })
+                .then(res => {
+                    logger.log("debug", LOG_ID + res);
+                    logger.log("debug", LOG_ID + "User deleted")
+                    resFE.send("User deleted");
+                })
+                .catch(error => {
+                    logger.log("error", LOG_ID + error);
+                });
+        }).catch((err) => {
+            resFE.send("Error");
+            logger.log("error", LOG_ID + err);
+        });
     }
 
     restart() {
@@ -115,7 +178,7 @@ class SDK {
             this.nodeSDK.events.once('rainbow_onstopped', (data) => {
                 logger.log("debug", LOG_ID + "SDK - rainbow_onstopped - rainbow event received. data", data);
 
-                logger.log("debug",  LOG_ID + "SDK - rainbow_onstopped rainbow SDK will re start");
+                logger.log("debug", LOG_ID + "SDK - rainbow_onstopped rainbow SDK will re start");
                 this.nodeSDK.start().then(() => {
                     resolve();
                 });
@@ -132,18 +195,6 @@ class SDK {
                 reject(err);
             }); // */
         });
-    }
-
-    get state() {
-        return this.nodeSDK.state;
-    }
-
-    get version() {
-        return this.nodeSDK.version;
-    }
-
-    get sdk() {
-        return this.nodeSDK;
     }
 }
 

@@ -10,7 +10,7 @@ const cors = require('cors');
 const nodeSDK = require('./sdk');
 const logger = require('./logger');
 
-const LOG_ID = "STARTER/ROUT - ";
+const LOG_ID = "modules/router.js - ";
 
 class Router {
 
@@ -28,55 +28,50 @@ class Router {
             this.port = config.port;
             this.sdk = sdk;
 
-            if(argv.length === 6) {
+            if (argv.length === 6) {
                 this.protocol = argv[4];
                 this.port = argv[5];
                 logger.log("info", LOG_ID + "serving " + this.protocol + " requests on port " + this.port + " (forced by CLI)");
             } else {
                 logger.log("info", LOG_ID + "serving " + this.protocol + " requests on port " + this.port);
             }
-    
+
             let key = fs.readFileSync(__dirname + "/../../" + config.certificates.key);
             let cert = fs.readFileSync(__dirname + "/../../" + config.certificates.cert);
-            let https_options = { key: key, cert: cert };
-            
-            if(this.protocol === "https") {
+            let https_options = {key: key, cert: cert};
+
+            if (this.protocol === "https") {
                 https.createServer(https_options, app).listen(this.port, () => {
                     logger.log("info", LOG_ID + 'server started');
                     resolve();
                 });
-            }
-            else {
+            } else {
                 http.createServer(app).listen(this.port, () => {
                     logger.log("info", LOG_ID + 'server started');
                     resolve();
                 });
             }
-    
+
             app.use(cors());
-    
+
             this.defineRoute();
 
-            // Define default route to bot
-            app.use("/botsample", router);
-            // Parse JSON bodies (as sent by API clients)
             app.use(express.json());
 
-            app.post('/createguest', function (req, res, sdk) {
-                let first_name = "";
-                let last_name = "";
-                first_name = req.body.first_name;
-                last_name = req.body.last_name;
-                logger.log(first_name);
-                logger.log(last_name);
-
-                nodeSDK.createGuest(first_name, last_name, req.body.selected_skill, res);
+            app.post('/createguest', function (req, res) {
+                logger.log("debug", LOG_ID + "/createguest called");
+                nodeSDK.createGuest(req.body.first_name, req.body.last_name, req.body.selected_skill, res);
             });
 
-            app.post('/waitagent', function (req, res, sdk) {
-                let jid_c = req.body.jid_c;
+            app.post('/endcall', function (req, res) {
+                logger.log("debug", LOG_ID + "/endcall called");
+                nodeSDK.endCall(req.body.jid_a, req.body.id_c, res);
             });
 
+            app.post('/cancel', function (req, res) {
+                logger.log("debug", LOG_ID + "/cancel called");
+                nodeSDK.cancel(req.body.id_c);
+            });
 
         });
     }
