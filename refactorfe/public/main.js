@@ -2,6 +2,8 @@
 import rainbowSDK from "./rainbow-sdk.min.js"; // If you do not use the bundler
 // import rainbowSDK from 'rainbow-web-sdk'; // If you use the bundler (for example - Webpack)
 
+var Conversation = "";
+
 var onReady = function onReady() {
   console.log("[Hello World] :: On SDK Ready !");
 };
@@ -140,14 +142,19 @@ var FillForm = Vue.extend({
           // get guest id
           // then store in localStorage
           console.log(response);
+          localStorage.jid_a = response.data.jid_a;
+          localStorage.jid_c = response.data.jid_c;
+          localStorage.id_c = response.data.id_c;
+          localStorage.agentAvailable = response.data.agentAvailable;
           // like normal ways to read json
           // localStorage.JID = response.data.JID;
-          // localStorage.guestEmail = response.data.d;
-          // localStorage.guestPassword = response.data.p;
+          localStorage.guest_login = response.data.guest_login;
+          localStorage.guest_password = response.data.guest_password;
         })
         .catch(function(error) {
           console.log(error);
         });
+
       this.$router.push("chatroom");
     }
   }
@@ -200,12 +207,22 @@ var ChatRoom = Vue.extend({
       inputContent: "",
       // _i means infomation
       contact_i: "",
-      conversation_i: ""
+      conversation_i: "",
+      end_call_url: "http://"
     };
   },
   methods: {
     endChat() {
       console.log("end chat here");
+      // close conversation
+      rainbowSDK.conversations.closeConversation(Conversation);
+      var endcalljson = {};
+      endcalljson["id_c"] = localStorage.id_c;
+      endcalljson["jid_a"] = localStorage.jid_a;
+      console.log(endcalljson);
+      axios.post("http://10.12.190.247:3002/endcall", endcalljson);
+      localStorage.clear();
+
       this.$router.push("Bye");
       // should clear localStorage and whatever here
       // localStorage.removeItem(last_name);
@@ -213,20 +230,24 @@ var ChatRoom = Vue.extend({
       // localStorage.removeItem(phone_number);
       // localStorage.removeItem(selected_skill);
       // remove whole localStorage
-      localStorage.clear();
     },
     send() {
       if (this.inputContent === "") {
         // pass
       } else {
         console.log(this.inputContent);
-        this.msgs.push({ from: "guest", me: true, content: this.inputContent });
-        localStorage.msgs = JSON.stringify(this.msgs);
+        var msgs_t = JSON.parse(localStorage.msgs);
+
+        msgs_t.push({ from: "guest", me: true, content: this.inputContent });
+        localStorage.msgs = JSON.stringify(msgs_t);
         // some code to send massage to somewhere
         // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
+        // var Conversation = localStorage.getItem("Conversation");
+        console.log(Conversation);
+
         rainbowSDK.im.sendMessageToConversation(
-          conversation_i,
-          inputContent + " read!"
+          Conversation,
+          this.inputContent
         );
 
         //
@@ -245,155 +266,238 @@ var ChatRoom = Vue.extend({
       console.log("i am retrieving message, timestamp:" + new Date().getTime());
     },
     onNewMessageReceived(event) {
-      let message = event.detail.message;
+      // let message = event.detail.message;
       this.conversation_i = event.detail.conversation;
       // Do something with the new message received
-      console.log(message);
+
+      event.detail.message.then(function(res) {
+        console.log(res);
+        // console.log()
+      });
+
       // new messages should be pushed to msgs
       // this.msgs.push();
     }
   },
+
   mounted() {
     // for test only
-    this.timer4 = setTimeout(() => {
-      var myRainbowLogin =
-        "93pn2uk4c30c6362pw4r9qo5n50ctb0tanldb9bt@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
-      var myRainbowPassword = "X,V/j}776~3QXjuF1M3xnjY4US]P38d[Tjz@Rp<4"; // Replace by your password
+    // this.timer4 = setTimeout(() => {
+    //   var myRainbowLogin =
+    //     "93pn2uk4c30c6362pw4r9qo5n50ctb0tanldb9bt@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
+    //   var myRainbowPassword = "X,V/j}776~3QXjuF1M3xnjY4US]P38d[Tjz@Rp<4"; // Replace by your password
+
+    //   // The SDK for Web is ready to be used, so you can sign in
+    //   console.log("Start logging in");
+    //   rainbowSDK.connection
+    //     .signin(myRainbowLogin, myRainbowPassword)
+    //     .then(function(account) {
+    //       console.log("login successful");
+    //       // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
+    //     })
+    //     .catch(function(err) {
+    //       console.log("login error");
+    //       console.log(err);
+    //       // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
+    //     });
+    // }, 1);
+
+    this.timer6 = setTimeout(() => {
+      if (localStorage.msgs != undefined) {
+        // if localStorage got something,
+        // just break it out
+        return;
+      }
+
+      this.msgs.push({
+        from: "agent",
+        me: false,
+        content: "Hi, " + localStorage.first_name + "!"
+      });
+      this.msgs.push({
+        from: "agent",
+        me: false,
+        content: "We are looking for an agent to connect you to."
+      });
+      localStorage.msgs = JSON.stringify(this.msgs);
+    }, 1);
+
+    // sync msgs with localStorage.msgs
+    // all msgs wil be added to localStorage.msgs
+    // then assign value in localStorage.msgs to this.msgs
+    this.timer5 = setInterval(() => {
+      setTimeout(() => {
+        this.msgs = JSON.parse(localStorage.msgs);
+      }, 1);
+    }, 500);
+
+    // this.timer0 = setTimeout(() => {
+    //   var msgs_t = JSON.parse(localStorage.msgs);
+
+    //   msgs_t.push({
+    //     from: "agent",
+    //     me: false,
+    //     content: "Hi, " + localStorage.first_name + "!"
+    //   });
+    //   msgs_t.push({
+    //     from: "agent",
+    //     me: false,
+    //     content: "We are looking for an agent to connect you to."
+    //   });
+    //   localStorage.msgs = JSON.stringify(msgs_t);
+    // }, 10);
+
+    // run after 5 senconds only once
+    this.timer3 = setTimeout(() => {
+      // get Contact object using JID in localStorage
+      // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/contacts#module_Contacts+getContactById
+
+      // var myRainbowLogin =
+      //   "93pn2uk4c30c6362pw4r9qo5n50ctb0tanldb9bt@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
+      // var myRainbowPassword = "X,V/j}776~3QXjuF1M3xnjY4US]P38d[Tjz@Rp<4"; // Replace by your password
+
+      var myRainbowLogin = localStorage.guest_login;
+      var myRainbowPassword = localStorage.guest_password;
+
+      console.log(myRainbowLogin);
+      console.log(myRainbowPassword);
 
       // The SDK for Web is ready to be used, so you can sign in
+      console.log("Start logging in");
       rainbowSDK.connection
         .signin(myRainbowLogin, myRainbowPassword)
         .then(function(account) {
           console.log("login successful");
           // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
+          // localStorage.JID = "5e7c74ba35c8367f99b90644"; // guest
+          // localStorage.JID =
+          //   "d6aabfd1a348467a990f0dfcb94b5218@sandbox-all-in-one-rbx-prod-1.rainbow.sbg"; // agent
+
+          var contactJID = localStorage.jid_a; // agent JID
+          console.log("This agent JID " + contactJID);
+
+          var selectedContact = null;
+
+          /* Handler called when user clicks on a contact */
+          var onContactSelected = function(contactId) {
+            selectedContact = rainbowSDK.contacts.getContactByJID(contactId);
+          };
+
+          console.log("Print selectedContact " + selectedContact);
+
+          // Contact not found locally, ask to the server
+          if (selectedContact == undefined || selectedContact == null) {
+            rainbowSDK.contacts
+              .searchByJid(contactJID)
+              .then(contact_t => {
+                selectedContact = contact_t;
+                console.log(selectedContact);
+
+                // console.log(selectedContact)
+                if (selectedContact) {
+                  // Ok, we have the contact object
+                  console.log("if loop");
+                  rainbowSDK.conversations
+                    .openConversationForContact(selectedContact)
+                    .then(function(conversation) {
+                      console.log("test");
+                      console.log(conversation);
+                      localStorage.setItem("Conversation", conversation);
+                      Conversation = conversation;
+
+                      console.log("Conversation estabished");
+                      console.log(Conversation);
+                      // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users4
+
+                      rainbowSDK.im.sendMessageToConversation(
+                        conversation,
+                        "New customer!"
+                      );
+                      console.log("First message sent!");
+                      // should send to backend that conversation is established
+
+                      // send to Ryan saying chat is started
+                      var temp_json = {};
+                      temp_json["jid_a"] = localStorage.jid_a;
+                      axios
+                        .post(
+                          "http://10.12.66.69:1337/update/cSuccess",
+                          temp_json
+                        )
+                        .then(function(res) {
+                          console.log(res);
+                        });
+                      document.addEventListener(
+                        rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+                        onNewMessageReceived
+                      );
+                    })
+                    .catch(function(err) {
+                      console.log(
+                        "Fail to create a conversation using contact: " +
+                          contact_t
+                      );
+                      console.log(err);
+                    });
+                } else {
+                  // Strange, no contact with that Id. Are you sure that the id is correct?
+                }
+              })
+              .catch(function(err) {
+                //Something when wrong with the server. Handle the trouble here
+                console.log(err);
+              });
+          }
+          // console.log("selectedContact");
+          // console.log(selectedContact);
+
+          let onNewMessageReceived = function(event) {
+            let message = event.detail.message;
+            console.log(message);
+            // let Conversation = event.detail.conversation;
+            console.log(message["data"]);
+            var msgs_t = JSON.parse(localStorage.msgs);
+            msgs_t.push({
+              from: "agent",
+              me: false,
+              content: message["data"]
+            });
+            localStorage.msgs = JSON.stringify(msgs_t);
+            // Do something with the new message received
+          };
         })
         .catch(function(err) {
           console.log("login error");
           console.log(err);
           // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
         });
-    }, 0);
-
-    this.timer0 = setTimeout(() => {
-      this.msgs.push({
-        from: "agent",
-        me: false,
-        content: "Hi, " + localStorage.first_name + ", What can I do for you?"
-      });
-    }, 1000);
-
-    this.timer2 = setTimeout(() => {
-      if (localStorage.msgs != null) {
-        this.msgs = JSON.parse(localStorage.msgs);
-        console.log(localStorage.msgs);
-        this.$nextTick(() => {
-          var scrollbar = document.querySelector(".chat-body");
-          scrollbar.scrollTop = scrollbar.scrollHeight;
-        });
-        return;
-      }
-      this.msgs.push({
-        from: "agent",
-        me: false,
-        content: "Connecting..."
-      });
-    }, 2000);
-
-    // run after 2 senconds only once
-    this.timer3 = setTimeout(() => {
-      // get Contact object using JID in localStorage
-      // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/contacts#module_Contacts+getContactById
-      localStorage.JID = "5e7c74ba35c8367f99b90644"; // guest
-      localStorage.JID =
-        "d6aabfd1a348467a990f0dfcb94b5218@sandbox-all-in-one-rbx-prod-1.rainbow.sbg"; // agent
-      var contactJID = localStorage.JID;
-      console.log(contactJID);
-      var selectedContact = "";
-      var Conversation = "";
-      selectedContact = rainbowSDK.contacts.getContactByJID(contactJID);
-
-      // Contact not found locally, ask to the server
-      if (selectedContact == undefined) {
-        rainbowSDK.contacts
-          .searchByJid(contactJID)
-          .then(contact => {
-            console.log(contact);
-            selectedContact = contact;
-            // console.log(selectedContact)
-            if (selectedContact) {
-              // Ok, we have the contact object
-              rainbowSDK.conversations
-                .openConversationForContact(selectedContact)
-                .then(function(conversation) {
-                  console.log("test");
-                  console.log(conversation);
-
-                  Conversation = conversation;
-                  
-                  console.log("Conversation estabished");
-                  console.log(Conversation)
-                  // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users4
-                  
-                  rainbowSDK.im.sendMessageToConversation(conversation, " read!");
-                  document.addEventListener(
-                    rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
-                    onNewMessageReceived
-                  );
-                })
-                .catch(function(err) {
-                  console.log(
-                    "Fail to create a conversation using contact: " +
-                      selectedContact
-                  );
-                  console.log(err);
-                });
-            } else {
-              // Strange, no contact with that Id. Are you sure that the id is correct?
-            }
-          })
-          .catch(function(err) {
-            //Something when wrong with the server. Handle the trouble here
-            console.log(err);
-          });
-      }
-      // console.log("selectedContact");
-      // console.log(selectedContact);
-
-      let onNewMessageReceived = function(event) {
-        let message = event.detail.message;
-        console.log(message);
-        // let Conversation = event.detail.conversation;
-
-        // Do something with the new message received
-      };
-
-      // console.log(this.contact_i);
-
-      // // console.log(this.contact_i.JSON());
-      // if (this.contact_i != null) {
-      //   // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/conversations#module_Conversations+getConversationById
-
-      //   rainbowSDK.conversations
-      //     .openConversationForContact(this.contact_i)
-      //     .then(function(promise) {
-      //       if (promise != null) {
-      //         this.conversation_i = promise;
-      //         console.log("Conversation estabished");
-      //         // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
-      //         document.addEventListener(
-      //           rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
-      //           this.onNewMessageReceived
-      //         );
-      //       } else {
-      //         console.log(
-      //           "Fail to create a conversation using contact: " + this.contact_i
-      //         );
-      //       }
-      //     });
-      // } else {
-      //   console.log("No contact found using JID: " + localStorage.JID);
-      // }
     }, 5000);
+    // console.log(this.contact_i);
+
+    // // console.log(this.contact_i.JSON());
+    // if (this.contact_i != null) {
+    //   // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/conversations#module_Conversations+getConversationById
+
+    //   rainbowSDK.conversations
+    //     .openConversationForContact(this.contact_i)
+    //     .then(function(promise) {
+    //       if (promise != null) {
+    //         this.conversation_i = promise;
+    //         console.log("Conversation estabished");
+    //         // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
+    //         document.addEventListener(
+    //           rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+    //           this.onNewMessageReceived
+    //         );
+    //       } else {
+    //         console.log(
+    //           "Fail to create a conversation using contact: " + this.contact_i
+    //         );
+    //       }
+    //     });
+    // } else {
+    //   console.log("No contact found using JID: " + localStorage.JID);
+    // }
 
     // we have a new message listener
     // we do not need this part, maybe
@@ -423,11 +527,21 @@ var Bye = Vue.extend({
   }
 });
 
+var Waiting = Vue.extend({
+  template: `<div class="waiting_screen>Please wait a while, we are looking for a suitable agent for you.</div>`
+});
+
+var Rerouting = Vue.extend({
+  template: `<div class="retoute_screen>>We are rerouting you. Please hold on.</div>`
+});
+
 const routes = [
   { path: "/", component: LiveChatButton },
   { path: "/fillform", component: FillForm },
   { path: "/chatroom", component: ChatRoom },
-  { path: "/bye", component: Bye }
+  { path: "/bye", component: Bye },
+  { path: "/waiting", component: Waiting },
+  { path: "/rerouting", component: Rerouting }
 ];
 
 const router = new VueRouter({
