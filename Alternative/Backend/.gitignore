@@ -5,3 +5,8 @@ artifacts/
 node_modules/
 npm-debug.log
 .nyc_output/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
