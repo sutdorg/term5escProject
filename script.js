@@ -1,8 +1,11 @@
+
 var express = require('express');
 var mysql = require('mysql');
 var app = express();
+const cors = require('cors');
 const bodyparser = require('body-parser');
 app.use(bodyparser.json());
+app.use(cors());
 //to set up the connection
 var connection = mysql.createConnection({
     host: 'localhost',
@@ -56,6 +59,7 @@ app.post('/cusreq', function(req,res){
                         if(rows[i].Skill1 == cushead || rows[i].Skill2 == cushead || rows[i].Skill3 == cushead){
                             console.log("status " + rows[i].AvailStatus);
                             if(rows[i].AvailStatus == 'Available'){
+                            // if(rows[i].AvailStatus == 'Available' && rows[i].NumOfCus<=3){
                                 console.log(rows[i].Name + " connect to Customer " + cus.FirstName);
                                 //res.send(rows[i].Name + " connect to Customer " + cus.FirstName);
                                 if(earliestTime == null){
@@ -78,9 +82,10 @@ app.post('/cusreq', function(req,res){
                     console.log("TESTING" + earliestTime + " " + agentChosen );
                     if(agentChosen != null){
                         check = 1;
+                        chosen_jid = rows[agentChosen].jid_a;
                         let ag = { AgentID: rows[agentChosen].AgentID, AvailStatus: 'Busy', NumOfCus: rows[agentChosen].NumOfCus+1 }
                         connection.query(agentsql,[ag.AgentID,ag.AvailStatus,ag.NumOfCus],function(error,rows,fields){
-                            //callback function
+                           
                             if(!!error){
                                 console.log("update agent status fail");
                                 console.log(err);
@@ -89,7 +94,8 @@ app.post('/cusreq', function(req,res){
                                 var realagentChosen = parseInt(agentChosen)+1;
                                 console.log(realagentChosen);
                                 console.log('update agent status success');
-                                connection.query("SELECT * FROM Agent_Table WHERE AgentID = ?",[realagentChosen] ,function(error,result,fields){
+                                //there is an issue here if the number is not ordered properly better to query for the jid_a and use it as the identifier instead
+                                connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?",[chosen_jid] ,function(error,result,fields){
                                     if(!!error){
                                         console.log('Error in query AgentTable');
                                     }
@@ -100,7 +106,7 @@ app.post('/cusreq', function(req,res){
                                 });
                                 
                         }
-                            });
+                           });
                     }
 
 
@@ -196,12 +202,68 @@ database = new Database({
     port:'3306',
     multipleStatements:true
 })
+// //resolution of request will result in the agent being connected to another customer from the Queue that his skills are applicable to 
+// app.post('/cRes',function(req,res){
+//     let sklist= ['one','two','three','four','five'];
+//     var cuslist =[];
+//     var TopCusList = [];
+//     var chosenCusList =[];
+//     database.query('SELECT * FROM Skills')
+//     .then(rows =>{
+//         someRows = rows;
+//         for(i in rows){
+//             sklist[i] = rows[i].Skill;
+//         }
+//         return database.query("SELECT * FROM Agent_Table WHERE jid_a=?",[req.body.jid_a]);
+//     })
+//     .then(rows =>{
+//         for (i in sklist){
+//             if(rows[0].Skill1 == sklist[i] || rows[0].Skill2 == sklist[i] || rows[0].Skill3 == sklist[i]){
+//                 var ans = parseInt(i);
+//                 cuslist.push(ans);
+//             }
+//         }
+//         return database.query("SELECT MIN(CustomerID) FROM Q1");
+//     })
+//     .then(rows =>{
+//         return database.query("SELECT * FROM Q1 WHERE CustomerID =?",[rows[0]["MIN(CustomerID)"]]);
+//     })
+//     .then(rows=>{
+//         TopCusList.push(rows);
+//         return database.query("SELECT MIN(CustomerID) FROM Q2");
+//     })
+//     .then(rows=>{
+//         return database.query("SELECT * FROM Q2 WHERE CustomerID =?",[rows[0]["MIN(CustomerID)"]]);
+//     })
+//     .then(rows=>{
+//         TopCusList.push(rows);
+//         return database.query("SELECT MIN(CustomerID) FROM Q3");
+//     })
+//     .then(rows=>{
+//         return database.query("SELECT * FROM Q3 WHERE CustomerID =?",[rows[0]["MIN(CustomerID)"]]);
+//     })
+//     .then(rows=>{
+//         TopCusList.push(rows);
+//         return database.close();
+//     })
+//     .then(()=>{
+//         for(j in cuslist){
+//             chosenCusList.push(TopCusList[cuslist[j]]);
+//         }
+//         var ans = chooseCustomer(chosenCusList);
+//         var anstosend = ans[0];
+//         res.send({jid_a:req.body.jid_a, jid_c:anstosend.JID_IM, agentAvailable : true});
+//     })
+// })
+
 //resolution of request will result in the agent being connected to another customer from the Queue that his skills are applicable to 
 app.post('/cRes',function(req,res){
     let sklist= ['one','two','three','four','five'];
     var cuslist =[];
     var TopCusList = [];
     var chosenCusList =[];
+    var cusagent = "SET @idUpcomingCall = ?;SET @jid_a = ?;SET @jid_c = ?; \
+        CALL CUSAGENT(@idUpcomingCall,@jid_a,@jid_c);";
     database.query('SELECT * FROM Skills')
     .then(rows =>{
         someRows = rows;
@@ -238,31 +300,60 @@ app.post('/cRes',function(req,res){
     })
     .then(rows=>{
         TopCusList.push(rows);
-        return database.close();
+        return 1;
     })
-    .then(()=>{
+    .then(rows=>{
         for(j in cuslist){
             chosenCusList.push(TopCusList[cuslist[j]]);
         }
         var ans = chooseCustomer(chosenCusList);
         var anstosend = ans[0];
-        res.send({jid_a:req.body.jid_a, jid_c:anstosend.JID_IM, agentAvailable : true});
+        return {jid_a:req.body.jid_a, jid_c:anstosend.JID_IM, agentAvailable : true};
+    })
+    .then(rows=>{
+        console.log(rows.jid_a);
+        console.log(rows.jid_c);
+        var chosenjid = rows.jid_c;
+        if(rows.jid_c != null){
+            database.query(cusagent,[0,rows.jid_a,rows.jid_c]);
+            return chosenjid
+        }
+    })
+    .then(rows=>{
+        console.log("sent and deleted from Q1");
+        database.query("DELETE FROM Q1 WHERE JID_IM =?",[rows]);
+        return rows;
+    })
+    .then(rows=>{
+        console.log("sent and deleted from Q2");
+        database.query("DELETE FROM Q2 WHERE JID_IM =?",[rows]);
+        return rows;
+    })
+    .then(rows=>{
+        console.log("sent and deleted from Q3");
+        return database.query("DELETE FROM Q3 WHERE JID_IM =?",[rows]);
+    })
+    .then(()=>{
+        return database.close();
     })
 })
-
 //Function to choose which Customer to pick from the Top in each list
 function chooseCustomer(cusChosenList){
     var mintime = null;
     var cusChosen = null;
     for (i in cusChosenList){
-        if(mintime == null){
-            mintime = cusChosenList[i][0].TimeRegistered;
-            cusChosen = cusChosenList[i];
+        if(cusChosenList[i]!= "" && cusChosenList[i]!=null){
+            console.log("entered non null" + i);
+            if(mintime == null){
+                mintime = cusChosenList[i][0].TimeRegistered;
+                cusChosen = cusChosenList[i];
+            }
+            else if(cusChosenList[i][0].TimeRegistered < mintime){
+                mintime = cusChosenList[i][0].TimeRegistered;
+                cusChosen = cusChosenList[i];
+            }
         }
-        else if(cusChosenList[i][0].TimeRegistered < mintime){
-            mintime = cusChosenList[i][0].TimeRegistered;
-            cusChosen = cusChosenList[i];
-        }
+        
     }
 return cusChosen;
 }
@@ -401,23 +492,225 @@ app.post('/add/agent',function(req,resp){
 }
     });
 });
+//method to assign a customer to a agent that is looking for a customer
+async function AgentlookingforCustomer(sql,ag,res){
+    let sklist= ['one','two','three','four','five'];
+    var cuslist =[];
+    var TopCusList = [];
+    var chosenCusList =[];
+    var cusagent = "SET @idUpcomingCall = ?;SET @jid_a = ?;SET @jid_c = ?; \
+    CALL CUSAGENT(@idUpcomingCall,@jid_a,@jid_c);";
+    try{
+        await database.query(sql,[ag.jid_a,ag.jid_c]);
+        const allskill = await database.query('SELECT * FROM Skills');
+        console.log("forming sklist");
+        for(i in allskill){
+            sklist[i] = allskill[i].Skill;
+        }
+        console.log(sklist);
+        // //update the database to available
+        // await database.query(sql,[ag.jid_a,ag.AvailStatus]);
+        const agentEntry = await database.query("SELECT * FROM Agent_Table WHERE jid_a=?",[ag.jid_a]);
+        console.log(agentEntry);
+        for (i in sklist){
+            if(agentEntry[0].Skill1 == sklist[i] || agentEntry[0].Skill2 == sklist[i] || agentEntry[0].Skill3 == sklist[i]){
+                var ans = parseInt(i);
+                cuslist.push(ans);
+            }
+        }
+        console.log(cuslist);
+        // while(agentEntry[0].NumOfCus<3){
+        for (z =0 ;z<3;z++){
+            //console.log("while condition" + agentEntry[0].NumOfCus<3);
+            const minfromq1 = await database.query("SELECT MIN(CustomerID) FROM Q1");
+            // if(minfromq1['MIN(CustomerID)'] != null){
+                const mincusfromq1 = await database.query("SELECT * FROM Q1 WHERE CustomerID =?",[minfromq1[0]["MIN(CustomerID)"]]);
+                TopCusList.push(mincusfromq1);
+            // }
+            // const mincusfromq1 = await database.query("SELECT * FROM Q1 WHERE CustomerID =?",[minfromq1[0]["MIN(CustomerID)"]]);
+            // if(mincusfromq1 != ""){
+            //     TopCusList.push(mincusfromq1);
+            // }
+            var minfromq2 = await database.query("SELECT MIN(CustomerID) FROM Q2");
+            var mincusfromq2 = await database.query("SELECT * FROM Q2 WHERE CustomerID =?",[minfromq2[0]["MIN(CustomerID)"]]);
+            if(mincusfromq2 != ""){
+                TopCusList.push(mincusfromq2);
+            }
+            var minfromq3 = await database.query("SELECT MIN(CustomerID) FROM Q3");
+            var mincusfromq3 = await database.query("SELECT * FROM Q3 WHERE CustomerID =?",[minfromq3[0]["MIN(CustomerID)"]]);
+            if(mincusfromq3 != ""){
+                console.log(mincusfromq3)
+                TopCusList.push(mincusfromq3);
+            }
+            console.log("adding only the queues with the correct skills");
+            for(j in cuslist){
+                chosenCusList.push(TopCusList[cuslist[j]]);
+            }
+            console.log(chosenCusList);
+            var ans = chooseCustomer(chosenCusList);
+            if(ans == null){
+                res.send("no entries to schedule to the agent");
+                break;
+            }
+            console.log("break didnt work");
+            var anstosend = ans[0];
+            var infotosend = {jid_a:ag.jid_a, jid_c:anstosend.JID_IM, agentAvailable : true};
+            console.log(infotosend);
+            var chosenjid = infotosend.jid_c;
+            if(chosenjid != null){
+                await database.query(cusagent,[0,infotosend.jid_a,chosenjid]);
+            }
+            await database.query("DELETE FROM Q1 WHERE JID_IM =?",[chosenjid]);
+            console.log("sent and del from Q1");
+            
+            await database.query("DELETE FROM Q2 WHERE JID_IM =?",[chosenjid]);
+            console.log("sent and deleted from Q2");
+            
+            await database.query("DELETE FROM Q3 WHERE JID_IM =?",[chosenjid]);
+            console.log("sent and deleted from Q3");
+            chosenCusList = [];            
+            TopCusList = [];   
+            // UpdateAgent(ag,res);
+        }
+    }catch(err){
+        console.log(err);
+    }
+}
+
+
+
+
+
 //SET AGENT TO AVAILABLE
-app.patch('/update/agent/avail',function(req,resp){
+app.post('/update/agent/avail',function(req,resp){
     let ag = req.body;
     var sql = "SET @jid_a = ?;SET @AvailStatus = ?; \
     CALL EDITAGENTAVAILENTRY(@jid_a,@AvailStatus);";
-    connection.query(sql,[ag.jid_a,ag.AvailStatus],function(error,rows,fields){
-    //callback function
-    if(!!error){
-        resp.send("update fail");
-        console.log(err);
-    }
-    else{
-        resp.send('update success');
-        console.log(ag);
 
-}
-    });
+    // database.query("SELECT * FROM Agent_Table WHERE jid_a = ?",[ag.jid_a])
+    //     .then(rows=>{
+    //         count = rows[0].NumOfCus;
+    //         console.log(count + "first");
+    //         return count;
+    
+        // .then(rows=>{
+        //     if (rows>=0){
+        //         AgentlookingforCustomer(sql,ag);
+        //         return rows-1;
+        //     }
+        // })
+        // .then(rows=>{
+        //     if (rows>=0){
+        //         AgentlookingforCustomer(sql,ag);
+        //         return rows-1;
+        //     }
+        // })
+    AgentlookingforCustomer(sql,ag,resp);
 });
 
+//     let ag = req.body;
+//     var sql = "SET @jid_a = ?;SET @AvailStatus = ?; \
+//     CALL EDITAGENTAVAILENTRY(@jid_a,@AvailStatus);";
+//     connection.query(sql,[ag.jid_a,ag.AvailStatus],function(error,rows,fields){
+//     //callback function
+//     if(!!error){
+//         resp.send("update fail");
+//         console.log(err);
+//     }
+//     else{
+//         resp.send('update success');
+//         console.log(ag);
+//         //need to update to schedule into the upcoming calls new customer can use a for loop until the limit is reached, try to covert the prev part into a function first so that can reuse
+
+// }
+//     });
+
+
+
+
+
+
+function UpdateAgent(body,res){
+    var sql = "SET @jid_a = ?;SET @NumOfCus = ?; SET @AvailStatus = ?; \
+    CALL CSUCCESS(@jid_a,@NumOfCus,@AvailStatus);";
+    connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?",[body.jid_a] ,function(error,rows,fields){
+        if(!!error){
+            console.log('Error in query AgentTable');
+        }
+        else{
+            console.log(rows);
+            let bodybusy = {jid_a:body.jid_a , AvailStatus: 'Busy', NumOfCus: parseInt(rows[0].NumOfCus)+1};
+            let bodynotbusy = {jid_a:body.jid_a , AvailStatus: 'Available', NumOfCus: parseInt(rows[0].NumOfCus)+1};
+            console.log(rows);
+            console.log('successful query for the AgentTable\n');
+            if(rows[0].NumOfCus>1){
+                // console.log(bodybusy.NumOfCus);
+                connection.query(sql,[bodybusy.jid_a,bodybusy.NumOfCus,bodybusy.AvailStatus],function(error,rows,fields){
+                    if(!!error){
+                        res.send("connection fail to resolve(busy)");
+                        console.log(error);
+                    }
+                    else{
+                        res.send("connection resolved, now busy");
+                    }
+                   
+                })
+            }
+            else{
+                console.log(bodynotbusy.NumOfCus);
+                connection.query(sql,[bodynotbusy.jid_a,bodynotbusy.NumOfCus,bodynotbusy.AvailStatus],function(error,rows,fields){
+                    if(!!error){
+                        res.send("connection fail to resolve(avail)");
+                        console.log(error);
+                    }
+                    else{
+                        res.send("connection resolved, still Available");
+                        console.log(rows);
+                        
+                    }
+                });
+            }
+
+        }
+    });
+
+}
+
+//Changes to AGENT when connection success
+app.post('/update/cSuccess',function(req,res){
+    // console.log("STARTCONNECTIONSUCCESS/n");
+    let body = req.body;
+    console.log(body);
+    UpdateAgent(body,res);
+})
+
+//TO Query to see if there are available agents
+app.get('/cusagent',function(req,res){
+    let body = req.body;
+    connection.query("SELECT * FROM UpcomingCall WHERE jid_c =?",[body.jid_c],function(error,rows,fields){
+        if(!!error){
+            res.send("fail to retrieve the entry");
+        }
+        else{
+            if(rows!=""){
+                console.log(rows);
+                res.send({jid_a:rows[0].jid_a,jid_c:rows[0].jid_c});
+                connection.query("DELETE FROM UpcomingCall WHERE idUpcomingCall= ?",[rows[0].idUpcomingCall],function(error,rows,fields){
+                    if(!!error){
+                        console.log(err);
+                    }
+                    else{
+                        console.log('successful Deletion of id\n');
+                    }
+                });
+            }
+            else{
+                res.send("no agent avail");
+            }
+            
+
+        }
+    })
+})
 app.listen(1337);
+
