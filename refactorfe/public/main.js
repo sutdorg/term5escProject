@@ -18,7 +18,7 @@ var onLoaded = function onLoaded() {
     .then(() => {
       console.log("[Hello World] :: Rainbow SDK is initialized!");
     })
-    .catch(err => {
+    .catch((err) => {
       console.log("[Hello World] :: Something went wrong with the SDK.", err);
     });
 };
@@ -62,8 +62,8 @@ var LiveChatButton = Vue.extend({
   methods: {
     openForm() {
       this.$router.push("fillform");
-    }
-  }
+    },
+  },
 });
 
 var FillForm = Vue.extend({
@@ -97,7 +97,7 @@ var FillForm = Vue.extend({
       last_name: "",
       phone_number: "",
       selected_skill: "",
-      post_url: "http://10.12.190.247:3002/createguest"
+      post_url: "http://10.12.190.247:3002/createguest",
     };
   },
   methods: {
@@ -135,10 +135,10 @@ var FillForm = Vue.extend({
       axios
         .post(this.post_url, this.guest_json, {
           headers: {
-            "Content-Type": "application/json"
-          }
+            "Content-Type": "application/json",
+          },
         })
-        .then(function(response) {
+        .then(function (response) {
           // get guest id
           // then store in localStorage
           console.log(response);
@@ -157,11 +157,11 @@ var FillForm = Vue.extend({
             this.$router.push(Waiting);
           }
         })
-        .catch(function(error) {
+        .catch(function (error) {
           console.log(error);
         });
-    }
-  }
+    },
+  },
 });
 
 var ChatRoom = Vue.extend({
@@ -206,13 +206,13 @@ var ChatRoom = Vue.extend({
         // some demo message
         { from: "guest", me: true, content: "1 hello from guest" },
         { from: "agent", me: false, content: "1 halo from agent" },
-        { from: "agent", me: false, content: "May I help you? " }
+        { from: "agent", me: false, content: "May I help you? " },
       ],
       inputContent: "",
       // _i means infomation
       contact_i: "",
       conversation_i: "",
-      end_call_url: "http://"
+      end_call_url: "http://",
     };
   },
   methods: {
@@ -274,14 +274,14 @@ var ChatRoom = Vue.extend({
       this.conversation_i = event.detail.conversation;
       // Do something with the new message received
 
-      event.detail.message.then(function(res) {
+      event.detail.message.then(function (res) {
         console.log(res);
         // console.log()
       });
 
       // new messages should be pushed to msgs
       // this.msgs.push();
-    }
+    },
   },
 
   mounted() {
@@ -316,12 +316,12 @@ var ChatRoom = Vue.extend({
       this.msgs.push({
         from: "agent",
         me: false,
-        content: "Hi, " + localStorage.first_name + "!"
+        content: "Hi, " + localStorage.first_name + "!",
       });
       this.msgs.push({
         from: "agent",
         me: false,
-        content: "We are looking for an agent to connect you to."
+        content: "We are looking for an agent to connect you to.",
       });
       localStorage.msgs = JSON.stringify(this.msgs);
     }, 1);
@@ -370,7 +370,7 @@ var ChatRoom = Vue.extend({
       console.log("Start logging in");
       rainbowSDK.connection
         .signin(myRainbowLogin, myRainbowPassword)
-        .then(function(account) {
+        .then(function (account) {
           console.log("login successful");
           // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
           // localStorage.JID = "5e7c74ba35c8367f99b90644"; // guest
@@ -383,7 +383,7 @@ var ChatRoom = Vue.extend({
           var selectedContact = null;
 
           /* Handler called when user clicks on a contact */
-          var onContactSelected = function(contactId) {
+          var onContactSelected = function (contactId) {
             selectedContact = rainbowSDK.contacts.getContactByJID(contactId);
           };
 
@@ -393,7 +393,7 @@ var ChatRoom = Vue.extend({
           if (selectedContact == undefined || selectedContact == null) {
             rainbowSDK.contacts
               .searchByJid(contactJID)
-              .then(contact_t => {
+              .then((contact_t) => {
                 selectedContact = contact_t;
                 console.log(selectedContact);
 
@@ -403,7 +403,7 @@ var ChatRoom = Vue.extend({
                   console.log("if loop");
                   rainbowSDK.conversations
                     .openConversationForContact(selectedContact)
-                    .then(function(conversation) {
+                    .then(function (conversation) {
                       console.log("test");
                       console.log(conversation);
                       localStorage.setItem("Conversation", conversation);
@@ -423,12 +423,13 @@ var ChatRoom = Vue.extend({
                       // send to Ryan saying chat is started
                       var temp_json = {};
                       temp_json["jid_a"] = localStorage.jid_a;
+                      // Ryan IP
                       axios
                         .post(
                           "http://10.12.66.69:1337/update/cSuccess",
                           temp_json
                         )
-                        .then(function(res) {
+                        .then(function (res) {
                           console.log(res);
                         });
                       document.addEventListener(
@@ -436,7 +437,7 @@ var ChatRoom = Vue.extend({
                         onNewMessageReceived
                       );
                     })
-                    .catch(function(err) {
+                    .catch(function (err) {
                       console.log(
                         "Fail to create a conversation using contact: " +
                           contact_t
@@ -447,7 +448,7 @@ var ChatRoom = Vue.extend({
                   // Strange, no contact with that Id. Are you sure that the id is correct?
                 }
               })
-              .catch(function(err) {
+              .catch(function (err) {
                 //Something when wrong with the server. Handle the trouble here
                 console.log(err);
               });
@@ -455,7 +456,7 @@ var ChatRoom = Vue.extend({
           // console.log("selectedContact");
           // console.log(selectedContact);
 
-          let onNewMessageReceived = function(event) {
+          let onNewMessageReceived = function (event) {
             let message = event.detail.message;
             console.log(message);
             // let Conversation = event.detail.conversation;
@@ -464,13 +465,13 @@ var ChatRoom = Vue.extend({
             msgs_t.push({
               from: "agent",
               me: false,
-              content: message["data"]
+              content: message["data"],
             });
             localStorage.msgs = JSON.stringify(msgs_t);
             // Do something with the new message received
           };
         })
-        .catch(function(err) {
+        .catch(function (err) {
           console.log("login error");
           console.log(err);
           // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
@@ -515,7 +516,7 @@ var ChatRoom = Vue.extend({
     clearInterval(this.timer0);
     clearInterval(this.timer1);
     clearInterval(this.timer2);
-  }
+  },
 });
 
 var Bye = Vue.extend({
@@ -528,7 +529,7 @@ var Bye = Vue.extend({
     setTimeout(() => {
       localStorage.clear();
     }, 0);
-  }
+  },
 });
 
 var Waiting = Vue.extend({
@@ -536,19 +537,29 @@ var Waiting = Vue.extend({
   mounted() {
     this.timer0 = setInterval(() => {
       setTimeout(() => {
-        // every 2 seconds check whether or not agent is available
-        // axios.post("http://").then()
+        // every 4 seconds check whether or not agent is available
+        // Ryan IP
+        axios
+          .post("http:// /cusagent", { jid_c: localStorage.jid_c })
+          .then((res) => {
+            if (res.avail == true) {
+              // sometimes need res.body.field
+              localStorage.jid_c = res.jid_c;
+              localStorage.jid_a = res.jid_a;
+              this.$router.push(ChatRoom);
+            } else {
+              // do nothing
+              console.log("Still no agent available");
+            }
+          });
         // remember to get agent id
-        if (what == avalible) {
-          this.$router.push(ChatRoom);
-        }
       }, 0);
-    }, 2000);
-  }
+    }, 4000);
+  },
 });
 
 var Rerouting = Vue.extend({
-  template: `<div class="retoute_screen>>We are rerouting you. Please hold on.</div>`
+  template: `<div class="retoute_screen>>We are rerouting you. Please hold on.</div>`,
 });
 
 const routes = [
@@ -557,13 +568,13 @@ const routes = [
   { path: "/chatroom", component: ChatRoom },
   { path: "/bye", component: Bye },
   { path: "/waiting", component: Waiting },
-  { path: "/rerouting", component: Rerouting }
+  { path: "/rerouting", component: Rerouting },
 ];
 
 const router = new VueRouter({
-  routes //  routes: routes
+  routes, //  routes: routes
 });
 
 const app = new Vue({
-  router
+  router,
 }).$mount("#app");
