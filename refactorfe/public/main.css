@@ -93,7 +93,6 @@ img {
   padding-right: 8px;
   border-radius: 8px;
   margin-bottom: 2px;
-
 }
 
 .agent_logo {
@@ -154,3 +153,125 @@ img {
   font-size: 20px;
   font-weight: 600;
 }
+
+/* Waiting progress animation */
+.waiting_screen {
+  text-align: center;
+}
+
+.load-container {
+  /* background-color: #f1f1ea; */
+  width: auto;
+  height: auto;
+  position: relative;
+  overflow: hidden;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.loader {
+  font-size: 10px;
+  margin: 100px auto;
+  margin-top: 200px;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  text-indent: -9999em;
+  position: relative;
+  animation: mymove 1.3s infinite linear;
+  -webkit-animation: mymove 1.5s infinite linear;
+  -webkit-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+@keyframes mymove {
+  0%,
+  100% {
+    box-shadow: 0 -3em 0 0.2em #46a4c9, 2em -2em 0 0em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 -1em #46a4c9, -3em 0 0 -1em #46a4c9, -2em -2em 0 0 #46a4c9;
+  }
+  12.5% {
+    box-shadow: 0 -3em 0 0 #46a4c9, 2em -2em 0 0.2em #46a4c9, 3em 0 0 0 #46a4c9,
+      2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9, -2em 2em 0 -1em #46a4c9,
+      -3em 0 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  25% {
+    box-shadow: 0 -3em 0 -0.5em #46a4c9, 2em -2em 0 0 #46a4c9,
+      3em 0 0 0.2em #46a4c9, 2em 2em 0 0 #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 -1em #46a4c9, -3em 0 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  37.5% {
+    box-shadow: 0 -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0em 0 0 #46a4c9, 2em 2em 0 0.2em #46a4c9, 0 3em 0 0em #46a4c9,
+      -2em 2em 0 -1em #46a4c9, -3em 0em 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  50% {
+    box-shadow: 0 -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 0em #46a4c9, 0 3em 0 0.2em #46a4c9,
+      -2em 2em 0 0 #46a4c9, -3em 0em 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  62.5% {
+    box-shadow: 0 -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 0 #46a4c9,
+      -2em 2em 0 0.2em #46a4c9, -3em 0 0 0 #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  75% {
+    box-shadow: 0em -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0em 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 0 #46a4c9, -3em 0em 0 0.2em #46a4c9, -2em -2em 0 0 #46a4c9;
+  }
+  87.5% {
+    box-shadow: 0em -3em 0 0 #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 0 #46a4c9, -3em 0em 0 0 #46a4c9, -2em -2em 0 0.2em #46a4c9;
+  }
+}
+
+@-webkit-keyframes mymove
+    /*Safari and Chrome*/ {
+  0%,
+  100% {
+    box-shadow: 0 -3em 0 0.2em #46a4c9, 2em -2em 0 0em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 -1em #46a4c9, -3em 0 0 -1em #46a4c9, -2em -2em 0 0 #46a4c9;
+  }
+  12.5% {
+    box-shadow: 0 -3em 0 0 #46a4c9, 2em -2em 0 0.2em #46a4c9, 3em 0 0 0 #46a4c9,
+      2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9, -2em 2em 0 -1em #46a4c9,
+      -3em 0 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  25% {
+    box-shadow: 0 -3em 0 -0.5em #46a4c9, 2em -2em 0 0 #46a4c9,
+      3em 0 0 0.2em #46a4c9, 2em 2em 0 0 #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 -1em #46a4c9, -3em 0 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  37.5% {
+    box-shadow: 0 -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0em 0 0 #46a4c9, 2em 2em 0 0.2em #46a4c9, 0 3em 0 0em #46a4c9,
+      -2em 2em 0 -1em #46a4c9, -3em 0em 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  50% {
+    box-shadow: 0 -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 0em #46a4c9, 0 3em 0 0.2em #46a4c9,
+      -2em 2em 0 0 #46a4c9, -3em 0em 0 -1em #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  62.5% {
+    box-shadow: 0 -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 0 #46a4c9,
+      -2em 2em 0 0.2em #46a4c9, -3em 0 0 0 #46a4c9, -2em -2em 0 -1em #46a4c9;
+  }
+  75% {
+    box-shadow: 0em -3em 0 -1em #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0em 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 0 #46a4c9, -3em 0em 0 0.2em #46a4c9, -2em -2em 0 0 #46a4c9;
+  }
+  87.5% {
+    box-shadow: 0em -3em 0 0 #46a4c9, 2em -2em 0 -1em #46a4c9,
+      3em 0 0 -1em #46a4c9, 2em 2em 0 -1em #46a4c9, 0 3em 0 -1em #46a4c9,
+      -2em 2em 0 0 #46a4c9, -3em 0em 0 0 #46a4c9, -2em -2em 0 0.2em #46a4c9;
+  }
+}
+
+/* End of Waiting progress animation * /

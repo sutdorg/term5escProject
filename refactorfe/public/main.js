@@ -150,12 +150,16 @@ var FillForm = Vue.extend({
           // localStorage.JID = response.data.JID;
           localStorage.guest_login = response.data.guest_login;
           localStorage.guest_password = response.data.guest_password;
+          // true or false
+          if (localStorage.agentAvailable) {
+            this.$router.push(ChatRoom);
+          } else {
+            this.$router.push(Waiting);
+          }
         })
         .catch(function(error) {
           console.log(error);
         });
-
-      this.$router.push("chatroom");
     }
   }
 });
@@ -528,7 +532,18 @@ var Bye = Vue.extend({
 });
 
 var Waiting = Vue.extend({
-  template: `<div class="waiting_screen>Please wait a while, we are looking for a suitable agent for you.</div>`
+  template: `<div class="waiting_screen"><div class="load-container"> Please wait a while, we are looking for a suitable agent for you.<div class="loader"></div></div></div>`,
+  mounted() {
+    this.timer0 = setInterval(() => {
+      setTimeout(() => {
+        // every 2 seconds check whether or not agent is available
+        // axios.post("http://").then()
+        if (what == avalible) {
+          this.$router.push(ChatRoom);
+        }
+      }, 0);
+    }, 2000);
+  }
 });
 
 var Rerouting = Vue.extend({
