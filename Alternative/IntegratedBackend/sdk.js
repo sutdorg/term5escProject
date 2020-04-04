@@ -61,9 +61,9 @@ class SDK {
         });
     }
 
-    createGuest(first_name, last_name, skill, resFE) {
+    createGuest(guestDetails, resFE) {
         //logger.log("debug", LOG_ID + "Creating guest...");
-        this.nodeSDK.admin.createGuestUser(first_name, last_name, "en-US", 86400).then((guest) => {
+        this.nodeSDK.admin.createGuestUser(guestDetails["first_name"], guestDetails["last_name"], "en-US", 86400).then((guest) => {
             //logger.log("debug", LOG_ID + "Guest Created, updating database...");
             let guestDetails = {
                 "CustomerID": 0,
@@ -71,7 +71,7 @@ class SDK {
                 "LastName": guest.lastName,
                 "StrID": guest.id,
                 "jid_c": guest.jid_im,
-                "Skill": skill
+                "Skill": guestDetails["skill"]
             };
             db.queueingReq(guestDetails)
                 .then(result => {
@@ -152,9 +152,9 @@ class SDK {
     // TODO
     // DB need to handle cancel call
     // called when guest cancel by closing tab before agent is assigned?
-    cancelCall(id_c, resFE) {
+    cancelCall(guestDetails, resFE) {
         // logger.log("debug", LOG_ID + "Cancelling call...");
-        this.nodeSDK.admin.deleteUser(id_c).then((user) => {
+        this.nodeSDK.admin.deleteUser(guestDetails.id_c).then((user) => {
             axios.post('http://10.12.66.69:1337/cancel', {
                 "id_c": id_c
             })

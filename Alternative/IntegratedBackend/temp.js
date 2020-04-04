@@ -1,8 +1,6 @@
-const express = require('express');
 const mysql = require('mysql');
-const app = express();
-const cors = require('cors');
-const bodyparser = require('body-parser');
+
+// To replace db.js after completion
 
 class DB {
     constructor() {
@@ -187,6 +185,7 @@ class DB {
         });
     }
 
+    // TODO: Clarify
     // need async? Yes, because he is using await..?
     // is using promise okay?
     // somewhat similar...
@@ -285,8 +284,8 @@ class DB {
         }
     }
 
-    waiting(customerDetails, resFE) {
-        this.connection.query("SELECT * FROM UpcomingCall WHERE jid_c =?", [customerDetails.jid_c], function (error, rows, fields) {
+    waiting(guestDetails, resFE) {
+        this.connection.query("SELECT * FROM UpcomingCall WHERE jid_c =?", [guestDetails.jid_c], function (error, rows, fields) {
             /** @namespace rows.idUpcomingCall **/
             if (!!error) {
                 resFE.send({"agentAvailable": false});
@@ -308,10 +307,42 @@ class DB {
         })
     }
 
-    onlineToOffline() {
+    onlineToOffline(agentDetails) {
+        let body = agentDetails;
+        let sql = "SET @jid_a = ?;SET @NumOfCus = ?; SET @AvailStatus = ?; \
+    CALL CSUCCESS(@jid_a,@NumOfCus,@AvailStatus);";
+        this.connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?",[body.jid_a] ,function(error,rows,fields){
+            if(!!error){
+                console.log('Error in query AgentTable');
+            }
+            else{
+                console.log(rows);
+                let bodyoffline = {jid_a:body.jid_a , AvailStatus: 'Offline', NumOfCus: 0};
+                console.log(rows);
+                console.log('successful query for the AgentTable\n');
+                if(rows[0].NumOfCus === 0){
+                    this.connection.query(sql,[bodyoffline.jid_a,bodyoffline.NumOfCus,bodyoffline.AvailStatus],function(error,rows,fields){
+                        if(!!error){
+                            // TODO: What?
+                            //res.send("connection fail to resolve(busy)");
+                            console.log(error);
+                        }
+                        else{
+                            // TODO: Resolve success? or heck it?
+                            //res.send("Agent has been set to Offline, Available to leave now");
+                        }
+                    })
+                }
+                else{
+                    // TODO: Disconnect customer and redirect to another agent?
+                    //res.send("cannot go offline you still have customers")
+                }
 
+            }
+        });
     }
 
+    // TODO: Clarify
     offlineToOnline() {
 
     }

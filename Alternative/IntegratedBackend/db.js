@@ -335,7 +335,7 @@ app.post('/gooffline',function(req,res){
 
 
 
-
+// TODO: Ask if I have to implement this
 /********************************************************************************************************************************/
 /* THIS IS THE GROUP TO GET CUSTOMERS/AGENT */
 

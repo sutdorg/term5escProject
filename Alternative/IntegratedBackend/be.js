@@ -25,7 +25,7 @@ class BE{
 
             app.post('/createguest', function (req, res) {
                 //logger.log("debug", LOG_ID + "/createguest called");
-                sdk.createGuest(req.body.first_name, req.body.last_name, req.body.selected_skill, res);
+                sdk.createGuest(req.body, res);
             });
 
             app.post('/endcall', function (req, res) {
@@ -35,11 +35,11 @@ class BE{
 
             app.post('/cancelcall', function (req, res) {
                 //logger.log("debug", LOG_ID + "/cancelcall called");
-                sdk.cancelCall(req.body.id_c);
+                sdk.cancelCall(req.body);
             });
             
             app.post('/cusagent', function (req, res) {
-                db.waiting();
+                db.waiting(req.body, res);
             });
 
             http.createServer(app).listen(this.port, () => {
