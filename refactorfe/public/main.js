@@ -538,6 +538,7 @@ var Waiting = Vue.extend({
       setTimeout(() => {
         // every 2 seconds check whether or not agent is available
         // axios.post("http://").then()
+        // remember to get agent id
         if (what == avalible) {
           this.$router.push(ChatRoom);
         }
