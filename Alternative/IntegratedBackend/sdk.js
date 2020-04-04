@@ -1,12 +1,11 @@
 "use strict";
 
 const NodeSDK = require("rainbow-node-sdk");
-const axios = require('axios');
 
 const logger = require('./logger.js');
-const db = require("./db.js");
+const db = require("./temp.js");
 
-const LOG_ID = "sdk - ";
+const LOG_ID = "SDK - ";
 
 class SDK {
 
@@ -27,31 +26,38 @@ class SDK {
     }
 
     start(config) {
-        this.nodeSDK = new NodeSDK(config);
+        return new Promise((resolve) => {
+            this.nodeSDK = new NodeSDK(config);
 
-        this.nodeSDK.events.on("rainbow_onready", () => {
-            //logger.log("debug", LOG_ID + "Initialize agents");
-            this.initAgents();
-        });
+            this.nodeSDK.events.on("rainbow_onready", () => {
+                //logger.log("debug", LOG_ID + "Initialize agents");
+                this.initAgents();
+            });
 
-        this.nodeSDK.start().then(() => {
-            //logger.log("debug", LOG_ID + "SDK started");
-            resolve();
-        });
+            this.nodeSDK.start().then(() => {
+                //logger.log("debug", LOG_ID + "SDK started");
+                resolve();
+            });
 
-        this.nodeSDK.events.on("rainbow_oncontactpresencechanged", (contact) => {
-            //logger.log("debug", LOG_ID + "Presence Changed");
-            //logger.log("debug", LOG_ID + contact.displayName + " presence changed to " + contact.presence);
-            axios.patch('http://10.12.66.69:1337/update/agent/avail', {
-                "jid_a": contact.jid_im,
-                "AvailStatus": contact.presence
-            })
-                .then(res => {
-                    //logger.log("debug", LOG_ID + res);
+            this.nodeSDK.events.on("rainbow_oncontactpresencechanged", (contact) => {
+                //logger.log("debug", LOG_ID + "Presence Changed");
+                //logger.log("debug", LOG_ID + contact.displayName + " presence changed to " + contact.presence);
+                if(contact.presence === "online"){
+                    db.offlineToOnline();
+                }else{
+                    db.onlineToOffline();
+                }
+                axios.patch('http://10.12.66.69:1337/update/agent/avail', {
+                    "jid_a": contact.jid_im,
+                    "AvailStatus": contact.presence
                 })
-                .catch(error => {
-                    //logger.log("error", LOG_ID + error);
-                });
+                    .then(res => {
+                        //logger.log("debug", LOG_ID + res);
+                    })
+                    .catch(error => {
+                        //logger.log("error", LOG_ID + error);
+                    });
+            });
         });
     }
 
@@ -59,23 +65,21 @@ class SDK {
         //logger.log("debug", LOG_ID + "Creating guest...");
         this.nodeSDK.admin.createGuestUser(first_name, last_name, "en-US", 86400).then((guest) => {
             //logger.log("debug", LOG_ID + "Guest Created, updating database...");
-            axios.defaults.headers.post['Content-Type'] = 'application/json';
-            axios.defaults.headers.post['sk'] = "Tablet";
-            axios.defaults.headers.post['jid_c'] = guest.jid_im;
-            axios.post('http://10.12.66.69:1337/cusreq', {
+            let guestDetails = {
                 "CustomerID": 0,
                 "FirstName": guest.firstName,
                 "LastName": guest.lastName,
                 "StrID": guest.id,
-                "JID_IM": guest.jid_im,
+                "jid_c": guest.jid_im,
                 "Skill": skill
-            })
-                .then(res => {
+            };
+            db.queueingReq(guestDetails)
+                .then(result => {
                     //logger.log("debug", LOG_ID + "Database updated, responding to fronted...");
                     let a = {
-                        "agentAvailable": res.data.agentAvailable,
+                        "agentAvailable": result.agentAvailable,
                         "jid_c": guest.jid_im,
-                        "jid_a": res.data.jid_a,
+                        "jid_a": result.jid_a,
                         "guest_login": guest.loginEmail,
                         "guest_password": guest.password,
                         "id_c": guest.id
@@ -84,6 +88,8 @@ class SDK {
                     // logger.log("debug", LOG_ID + "Responded to frontend");
                 })
                 .catch(error => {
+                    // TODO
+                    // handle reject cases
                     resFE.send("error");
                     // logger.log("error", LOG_ID + error);
                 });
@@ -100,7 +106,7 @@ class SDK {
             contacts.forEach(function (entry) {
                 if (!(entry.roles.includes("admin") || entry.roles.includes("guest"))) {
                     //logger.log("debug", LOG_ID + "Adding " + entry.displayName + " to database...");
-                    axios.post('http://42.60.131.56:80/add/agent', {
+                    let agentDetails = {
                         "AgentID": 0,
                         "Skill1": entry.tags[0],
                         "Skill2": entry.tags[1],
@@ -109,7 +115,8 @@ class SDK {
                         "AvailStatus": entry.presence,
                         "NumOfCus": 0,
                         "jid_a": entry.jid_im
-                    })
+                    };
+                    db.addingAgent(agentDetails)
                         .then(res => {
                             //logger.log("debug", LOG_ID + res);
                         })
@@ -126,9 +133,8 @@ class SDK {
     endCall(jid_a, id_c, resFE) {
         //logger.log("debug", LOG_ID + "Ending call...");
         this.nodeSDK.admin.deleteUser(id_c).then((user) => {
-            axios.post('http://10.12.66.69:1337/cRes', {
-                "jid_a": jid_a
-            })
+            let agentDetails = {"jid_a" : jid_a};
+            db.resolveCall(agentDetails)
                 .then(res => {
                     //logger.log("debug", LOG_ID + res);
                     //logger.log("debug", LOG_ID + "User deleted")
@@ -143,6 +149,9 @@ class SDK {
         });
     }
 
+    // TODO
+    // DB need to handle cancel call
+    // called when guest cancel by closing tab before agent is assigned?
     cancelCall(id_c, resFE) {
         // logger.log("debug", LOG_ID + "Cancelling call...");
         this.nodeSDK.admin.deleteUser(id_c).then((user) => {
