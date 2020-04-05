@@ -13,9 +13,22 @@ const LOG_ID = "APP - ";
 let txt = configfileSDK.toString();
 let configSDK = json.parse(txt);
 
-// TODO: create db config
-let configDB = {};
-let configDB2 = {};
+let configDB = {
+    "host": "localhost",
+    "user": "escdb",
+    "password": "HSGAjPLSrhRchGct",
+    "database": "escdb",
+    "port": "3306",
+    "multipleStatements": true
+};
+let configDB2 = {
+    "host": "localhost",
+    "user": "escdb",
+    "password": "HSGAjPLSrhRchGct",
+    "database": "escdb",
+    "port": "3306",
+    "multipleStatements": true
+};
 
 database.start(configDB, configDB2).then(res => {
     sdk.start(configSDK).then(res => {

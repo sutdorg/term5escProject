@@ -90,8 +90,8 @@ class DB {
                                 let chosen_jid = rows[agentChosen].jid_a;
                                 let ag = {
                                     AgentID: rows[agentChosen].AgentID,
-                                    AvailStatus: 'Busy',
-                                    NumOfCus: rows[agentChosen].NumOfCus + 1
+                                    AvailStatus: rows[agentChosen].AvailStatus,
+                                    NumOfCus: rows[agentChosen].NumOfCus
                                 };
                                 this.connection.query(agentsql, [ag.AgentID, ag.AvailStatus, ag.NumOfCus], (error, rows, fields) => {
                                     if (!!error) {
@@ -119,6 +119,10 @@ class DB {
                             }
 
                             if (check === 0) {
+                                console.log(LOG_ID + cushead);
+                                console.log(LOG_ID + sklist);
+                                console.log(LOG_ID + "cus.skill", cus.Skill);
+                                console.log(LOG_ID + guestDetails);
                                 console.log(LOG_ID + 'went into the check loop');
                                 console.log(LOG_ID + sklist[0]);
                                 if (cushead === sklist[0]) {
@@ -188,11 +192,13 @@ class DB {
         let cusChosen = null;
 
         for (let i = 0; i < cusChosenList.length; i++) {
-            if (cusChosenList[i] !== "" && cusChosenList[i] != null) {
+            if (cusChosenList[i] != "" && cusChosenList[i] != null) {
                 console.log(LOG_ID + "entered non null" + i);
                 if (mintime == null || (cusChosenList[i][0].TimeRegistered < mintime)) {
+                    console.log(LOG_ID + "enter if statement");
                     mintime = cusChosenList[i][0].TimeRegistered;
                     cusChosen = cusChosenList[i];
+                    console.log(LOG_ID + cusChosen);
                 }
             }
         }
@@ -206,12 +212,12 @@ class DB {
         let chosenCusList = [];
         let cusagent = "SET @idUpcomingCall = ?;SET @jid_a = ?;SET @jid_c = ?; \
                         CALL CUSAGENT(@idUpcomingCall,@jid_a,@jid_c);";
-        let ag = agentDetails.jid_a;
+        let ag = agentDetails;
         let sql = "SET @jid_a = ?;SET @AvailStatus = ?; \
                    CALL EDITAGENTAVAILENTRY(@jid_a,@AvailStatus);";
 
         try {
-            await this.database.query(sql, [ag.jid_a, ag.jid_c]);
+            await this.database.query(sql, [ag.jid_a, "Online"]);
             const allskill = await this.database.query('SELECT * FROM Skills');
             console.log("LOG_ID + forming sklist");
             for (let i = 0; i < allskill.length; i++) {
@@ -240,19 +246,23 @@ class DB {
                 TopCusList.push(mincusfromq3);
             }
             console.log(LOG_ID + "adding only the queues with the correct skills");
-            for (let j = 0; i < cuslist.length; i++) {
+            for (let j = 0; j < cuslist.length; j++) {
                 chosenCusList.push(TopCusList[cuslist[j]]);
             }
             let ans = this.chooseCustomer(chosenCusList);
+            console.log(LOG_ID + "ans is ", ans);
             if (ans == null) {
                 console.log(LOG_ID + "no customers to be queued");
                 return Promise.resolve("no customers to be queued");
             } else {
                 let anstosend = ans[0];
-                let infotosend = {"jid_a": ag.jid_a, "jid_c": anstosend.jid_c, "agentAvailable": true};
+                console.log(LOG_ID + "anstosend is ", anstosend);
+                let infotosend = {"jid_a": ag.jid_a, "jid_c": anstosend.JID_IM, "agentAvailable": true};
                 console.log(LOG_ID + "infotosend" + infotosend);
                 let chosenjid = infotosend.jid_c;
+                console.log(LOG_ID + chosenjid);
                 if (chosenjid != null) {
+                    console.log(LOG_ID + "add to table");
                     await this.database.query(cusagent, [0, infotosend.jid_a, chosenjid]);
                 }
                 await this.database.query("DELETE FROM Q1 WHERE JID_IM =?", [chosenjid]);
@@ -379,7 +389,7 @@ class DB {
         let chosenCusList = [];
         let cusagent = "SET @idUpcomingCall = ?;SET @jid_a = ?;SET @jid_c = ?; \
                         CALL CUSAGENT(@idUpcomingCall,@jid_a,@jid_c);";
-        let ag = req.body;
+        let ag = req;
         let sql = "SET @jid_a = ?;SET @AvailStatus = ?; \
                    CALL EDITAGENTAVAILENTRY(@jid_a,@AvailStatus);";
         try {
@@ -416,6 +426,7 @@ class DB {
                 for (let j = 0; j < cuslist.length; j++) {
                     chosenCusList.push(TopCusList[cuslist[j]]);
                 }
+                console.log(LOG_ID + "chosenCusList", chosenCusList);
                 let ans = this.chooseCustomer(chosenCusList);
                 if (ans == null) {
                     console.log(LOG_ID + "no customers avail for the agent");
