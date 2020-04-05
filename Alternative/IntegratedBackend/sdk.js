@@ -42,9 +42,9 @@ class SDK {
         });
     }
 
-    createGuest(guestDetails, resFE) {
+    createGuest(req, resFE) {
         console.log(LOG_ID + "Creating guest...");
-        this.nodeSDK.admin.createGuestUser(guestDetails["first_name"], guestDetails["last_name"], "en-US", 86400).then((guest) => {
+        this.nodeSDK.admin.createGuestUser(req.first_name, req.last_name, "en-US", 86400).then((guest) => {
             console.log(LOG_ID + "Guest Created, updating database...");
             let guestDetails = {
                 "CustomerID": 0,
@@ -52,7 +52,7 @@ class SDK {
                 "LastName": guest.lastName,
                 "StrID": guest.id,
                 "jid_c": guest.jid_im,
-                "Skill": guestDetails["skill"]
+                "Skill": req.skill
             };
             db.queueingReq(guestDetails)
                 .then(result => {
