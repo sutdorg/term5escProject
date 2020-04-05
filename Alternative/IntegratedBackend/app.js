@@ -1,18 +1,25 @@
-const sdk = require('sdk.js');
-const backend = require('be.js');
-const database = require('db.js');
+"use strict";
 
+const json = require('comment-json');
+const fs = require('fs');
+const configfileSDK = fs.readFileSync("./configSDK.json");
 
-// TODO: create sdk config & db config
-// let port = process.env.PORT || 3000;
+const sdk = require('./sdk.js');
+const backend = require('./be.js');
+const database = require('./db.js');
 
-let configSDK = {};
+const LOG_ID = "APP - ";
+
+let txt = configfileSDK.toString();
+let configSDK = json.parse(txt);
+
+// TODO: create db config
 let configDB = {};
 
-sdk.start(configSDK).then(res => {
-    database.start(configDB).then(res => {
+database.start(configDB).then(res => {
+    sdk.start(configSDK).then(res => {
         backend.start().then(res => {
-            console.log("all started");
+            console.log(LOG_ID + "All services started");
         });
     });
 });

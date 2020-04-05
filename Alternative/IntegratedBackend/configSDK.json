@@ -22,6 +22,9 @@
       "zippedArchive": false
     }
   },
+  "im": {
+    "sendReadReceipt": true
+  },
   "testOutdatedVersion": true,
   "servicesToStart": {
     "bubbles": {

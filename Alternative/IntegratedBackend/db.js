@@ -1,6 +1,6 @@
 const mysql = require('mysql');
 
-// To replace db.js after completion
+const LOG_ID = "DB - ";
 
 class DB {
     constructor() {
@@ -9,14 +9,18 @@ class DB {
     }
 
     start(config) {
-        this.connection = mysql.createConnection(config);
-
-        this.connection.connect(function (error) {
-            if (!!error) {
-                console.log('Error');
-            } else {
-                console.log('connected');
-            }
+        return new Promise((resolve, reject) => {
+            this.connection = mysql.createConnection(config);
+            this.connection.connect(function (error) {
+                if (!!error) {
+                    console.log(LOG_ID + "dabase failed to start");
+                    console.log(LOG_ID + error);
+                    reject();
+                } else {
+                    console.log(LOG_ID + 'database started');
+                    resolve();
+                }
+            });
         });
     }
 
@@ -46,7 +50,7 @@ class DB {
                 let agentsql = "SET @AgentID = ?;SET @AvailStatus = ?;SET @NumOfCus = ?; \
                                 CALL AGENTSTATUS(@AgentID,@AvailStatus,@NumOfCus);";
                 if (!!error) {
-                    console.log("cannot retrieve the skills");
+                    console.log(LOG_ID + "cannot retrieve the skills");
                     reject("ERROR: Failed to Retrieve Skills");
                 } else {
                     for (let i = 0; i < result.length; i++) {
@@ -54,14 +58,14 @@ class DB {
                     }
                     this.connection.query("SELECT * FROM Agent_Table", function (error, rows) {
                         if (!!error) {
-                            console.log("fail to retrieve from agent_table");
+                            console.log(LOG_ID + "fail to retrieve from agent_table");
                             reject("fail to retrieve from agent_table");
                         } else {
                             let earliestTime = null;
                             let agentChosen = null;
                             for (let i = 0; i < rows.length; i++) {
                                 if (rows[i].Skill1 === cushead || rows[i].Skill2 === cushead || rows[i].Skill3 === cushead) {
-                                    console.log("status " + rows[i].AvailStatus);
+                                    console.log(LOG_ID + "status " + rows[i].AvailStatus);
                                     if (rows[i].AvailStatus === 'Available') {
                                         console.log(rows[i].Name + " connect to Customer " + cus.FirstName);
                                         if (earliestTime == null) {
@@ -72,13 +76,13 @@ class DB {
                                             agentChosen = i;
                                         }
                                     } else {
-                                        console.log(rows[i].AgentID + ' is not available right now');
+                                        console.log(LOG_ID + rows[i].AgentID + ' is not available right now');
                                     }
                                 } else {
-                                    console.log(rows[i].AgentID + ' does not have the required skills');
+                                    console.log(LOG_ID + rows[i].AgentID + ' does not have the required skills');
                                 }
                             }
-                            console.log("TESTING" + earliestTime + " " + agentChosen);
+                            console.log(LOG_ID + "TESTING" + earliestTime + " " + agentChosen);
                             if (agentChosen != null) {
                                 check = 1;
                                 let chosen_jid = rows[agentChosen].jid_a;
@@ -89,18 +93,18 @@ class DB {
                                 };
                                 this.connection.query(agentsql, [ag.AgentID, ag.AvailStatus, ag.NumOfCus], function (error, rows, fields) {
                                     if (!!error) {
-                                        console.log("update agent status fail");
-                                        console.log(error);
+                                        console.log(LOG_ID + "update agent status fail");
+                                        console.log(LOG_ID + error);
                                     } else {
                                         let realagentChosen = parseInt(agentChosen) + 1;
-                                        console.log(realagentChosen);
-                                        console.log('update agent status success');
+                                        console.log(LOG_ID + realagentChosen);
+                                        console.log(LOG_ID + 'update agent status success');
                                         //there is an issue here if the number is not ordered properly better to query for the jid_a and use it as the identifier instead
                                         this.connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?", [chosen_jid], function (error, result, fields) {
                                             if (!!error) {
-                                                console.log('Error in query AgentTable');
+                                                console.log(LOG_ID + 'Error in query AgentTable');
                                             } else {
-                                                console.log(result[0].jid_a);
+                                                console.log(LOG_ID + result[0].jid_a);
                                                 resolve({
                                                     "jid_a": result[0].jid_a,
                                                     "jid_c": cus.jid_c,
@@ -108,50 +112,47 @@ class DB {
                                                 });
                                             }
                                         });
-
                                     }
                                 }, this);
                             }
 
                             if (check === 0) {
-                                console.log('went into the check loop');
-                                console.log(sklist[0]);
+                                console.log(LOG_ID + 'went into the check loop');
+                                console.log(LOG_ID + sklist[0]);
                                 if (cushead === sklist[0]) {
-                                    console.log(cushead + " skill accepted");
+                                    console.log(LOG_ID + cushead + " skill accepted");
                                     this.connection.query(cussql1, [cus.CustomerID, cus.FirstName, cus.LastName, cus.StrID, cus.jid_c, cus.Skill], function (error, result, fields) {
                                         if (!!error) {
                                             reject("update Q1 failed");
                                         } else {
-                                            console.log("update Q1 success");
-                                            reject({"agentAvailable": false});
-
+                                            console.log(LOG_ID + "update Q1 success");
+                                            resolve({"agentAvailable": false});
                                         }
-
                                     });
                                 } else if (cushead === sklist[1]) {
-                                    console.log(cushead + " skill accepted");
+                                    console.log(LOG_ID + cushead + " skill accepted");
                                     this.connection.query(cussql2, [cus.CustomerID, cus.FirstName, cus.LastName, cus.StrID, cus.jid_c, cus.Skill], function (error, result, fields) {
                                         if (!!error) {
+                                            console.log(LOG_ID + error);
                                             reject("update Q2 failed");
-                                            console.log(error);
                                         } else {
-                                            console.log("update Q2 success");
-                                            reject({"agentAvailable": false});
+                                            console.log(LOG_ID + "update Q2 success");
+                                            resolve({"agentAvailable": false});
                                         }
                                     });
                                 } else if (cushead === sklist[2]) {
-                                    console.log(cushead + " skill accepted");
+                                    console.log(LOG_ID + cushead + " skill accepted");
                                     this.connection.query(cussql3, [cus.CustomerID, cus.FirstName, cus.LastName, cus.StrID, cus.jid_c, cus.Skill], function (error, result, fields) {
                                         if (!!error) {
+                                            console.log(LOG_ID + error);
                                             reject("update Q3 failed");
-                                            console.log(error);
                                         } else {
-                                            reject({"agentAvailable": false});
-                                            console.log("update Q3 success");
+                                            console.log(LOG_ID + "update Q3 success");
+                                            resolve({"agentAvailable": false});
                                         }
                                     });
                                 } else {
-                                    console.log("else1");
+                                    console.log(LOG_ID + "else1");
                                     reject(cushead + " not accpeted as a skill.");
                                 }
                             }
@@ -171,10 +172,10 @@ class DB {
                 //callback function
                 if (!!error) {
                     reject(error);
-                    console.log(error);
+                    console.log(LOG_ID + error);
                 } else {
-                    console.log('update of id\n');
-                    resolve();
+                    console.log(LOG_ID + 'update of id\n');
+                    resolve("agent added");
                 }
             });
         });
@@ -186,7 +187,7 @@ class DB {
 
         for (let i = 0; i < cusChosenList.length; i++) {
             if (cusChosenList[i] !== "" && cusChosenList[i] != null) {
-                console.log("entered non null" + i);
+                console.log(LOG_ID + "entered non null" + i);
                 if (mintime == null || (cusChosenList[i][0].TimeRegistered < mintime)) {
                     mintime = cusChosenList[i][0].TimeRegistered;
                     cusChosen = cusChosenList[i];
@@ -210,13 +211,13 @@ class DB {
         try {
             await this.database.query(sql, [ag.jid_a, ag.jid_c]);
             const allskill = await this.database.query('SELECT * FROM Skills');
-            console.log("forming sklist");
+            console.log("LOG_ID + forming sklist");
             for (let i = 0; i < allskill.length; i++) {
                 sklist[i] = allskill[i].Skill;
             }
-            console.log(sklist);
+            console.log(LOG_ID + sklist);
             const agentEntry = await this.database.query("SELECT * FROM Agent_Table WHERE jid_a=?", [ag.jid_a]);
-            console.log(agentEntry);
+            console.log(LOG_ID + agentEntry);
             for (let i = 0; i < sklist.length; i++) {
                 if (agentEntry[0].Skill1 === sklist[i] || agentEntry[0].Skill2 === sklist[i] || agentEntry[0].Skill3 === sklist[i]) {
                     let ans = parseInt(i);
@@ -236,35 +237,35 @@ class DB {
             if (mincusfromq3 !== "") {
                 TopCusList.push(mincusfromq3);
             }
-            console.log("adding only the queues with the correct skills");
+            console.log(LOG_ID + "adding only the queues with the correct skills");
             for (let j = 0; i < cuslist.length; i++) {
                 chosenCusList.push(TopCusList[cuslist[j]]);
             }
             let ans = this.chooseCustomer(chosenCusList);
             if (ans == null) {
-                console.log("no customers to be queued");
-                return Promise.resolve({"status": "no customers to be queued"});
+                console.log(LOG_ID + "no customers to be queued");
+                return Promise.resolve("no customers to be queued");
             } else {
                 let anstosend = ans[0];
                 let infotosend = {"jid_a": ag.jid_a, "jid_c": anstosend.jid_c, "agentAvailable": true};
-                console.log("infotosend" + infotosend);
+                console.log(LOG_ID + "infotosend" + infotosend);
                 let chosenjid = infotosend.jid_c;
                 if (chosenjid != null) {
                     await this.database.query(cusagent, [0, infotosend.jid_a, chosenjid]);
                 }
                 await this.database.query("DELETE FROM Q1 WHERE JID_IM =?", [chosenjid]);
-                console.log("sent and del from Q1");
+                console.log(LOG_ID + "sent and del from Q1");
                 await this.database.query("DELETE FROM Q2 WHERE JID_IM =?", [chosenjid]);
-                console.log("sent and deleted from Q2");
+                console.log(LOG_ID + "sent and deleted from Q2");
                 await this.database.query("DELETE FROM Q3 WHERE JID_IM =?", [chosenjid]);
-                console.log("sent and deleted from Q3");
+                console.log(LOG_ID + "sent and deleted from Q3");
                 chosenCusList = [];
                 TopCusList = [];
-                console.log("customers are queued");
-                return Promise.resolve({"status": "entry sent and Queued"});
+                console.log(LOG_ID + "customers are queued");
+                return Promise.resolve("entry sent and Queued");
             }
         } catch (err) {
-            console.log(err);
+            console.log(LOG_ID + err);
             return Promise.reject(err);
         }
     }
@@ -275,13 +276,13 @@ class DB {
                 resFE.send({"agentAvailable": false});
             } else {
                 if (rows !== "") {
-                    console.log(rows);
+                    console.log(LOG_ID + rows);
                     resFE.send({"jid_a": rows[0].jid_a, "jid_c": rows[0].jid_c, "agentAvailable": true});
                     this.connection.query("DELETE FROM UpcomingCall WHERE idUpcomingCall= ?", [rows[0].idUpcomingCall], function (error, rows, fields) {
                         if (!!error) {
-                            console.log(error);
+                            console.log(LOG_ID + error);
                         } else {
-                            console.log('successful Deletion of id\n');
+                            console.log(LOG_ID + 'successful Deletion of id\n');
                         }
                     });
                 } else {
@@ -297,28 +298,27 @@ class DB {
                    CALL CSUCCESS(@jid_a,@NumOfCus,@AvailStatus);";
         this.connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?", [body.jid_a], function (error, rows, fields) {
             if (!!error) {
-                console.log('Error in query AgentTable');
+                console.log(LOG_ID + 'Error in query AgentTable');
             } else {
-                console.log(rows);
+                console.log(LOG_ID + rows);
                 let bodyoffline = {jid_a: body.jid_a, AvailStatus: 'Offline', NumOfCus: 0};
-                console.log(rows);
-                console.log('successful query for the AgentTable\n');
+                console.log(LOG_ID + rows);
+                console.log(LOG_ID + 'successful query for the AgentTable\n');
                 if (rows[0].NumOfCus === 0) {
                     this.connection.query(sql, [bodyoffline.jid_a, bodyoffline.NumOfCus, bodyoffline.AvailStatus], function (error, rows, fields) {
                         if (!!error) {
-                            // TODO: What?
-                            //res.send("connection fail to resolve(busy)");
-                            console.log(error);
+                            console.log(LOG_ID + "connection fail to resolve(busy)");
+                            console.log(LOG_ID + error);
                         } else {
-                            // TODO: Resolve success? or heck it?
-                            //res.send("Agent has been set to Offline, Available to leave now");
+                            console.log(LOG_ID + "Agent has been set to Offline, Available to leave now");
+                            console.log(LOG_ID + error);
                         }
                     });
                 } else {
                     // TODO: Disconnect customer and redirect to another agent?
-                    //res.send("cannot go offline you still have customers")
+                    console.log(LOG_ID + error);
+                    console.log(LOG_ID + "cannot go offline you still have customers");
                 }
-
             }
         });
     }
@@ -334,41 +334,40 @@ class DB {
                    CALL CSUCCESS(@jid_a,@NumOfCus,@AvailStatus);";
         this.connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?", [body.jid_a], function (error, rows, fields) {
             if (!!error) {
-                console.log('Error in query AgentTable');
+                console.log(LOG_ID + 'Error in query AgentTable');
             } else {
-                console.log(rows);
+                console.log(LOG_ID + rows);
                 let bodybusy = {jid_a: body.jid_a, AvailStatus: 'Busy', NumOfCus: parseInt(rows[0].NumOfCus) + num};
                 let bodynotbusy = {
                     jid_a: body.jid_a,
                     AvailStatus: 'Available',
                     NumOfCus: parseInt(rows[0].NumOfCus) + num
                 };
-                console.log(rows);
-                console.log('successful query for the AgentTable\n');
+                console.log(LOG_ID + rows);
+                console.log(LOG_ID + 'successful query for the AgentTable\n');
                 if (parseInt(rows[0].NumOfCus) + num > 3) {
-                    // console.log(bodybusy.NumOfCus);
+                    console.log(LOG_ID + bodybusy.NumOfCus);
                     this.connection.query(sql, [bodybusy.jid_a, bodybusy.NumOfCus, bodybusy.AvailStatus], function (error, rows, fields) {
                         if (!!error) {
-                            //res.send("connection fail to resolve(busy)");
-                            console.log(error);
+                            console.log(LOG_ID + "connection fail to resolve(busy)");
+                            console.log(LOG_ID + error);
                         } else {
-                            //res.send("connection resolved, now busy");
+                            console.log(LOG_ID + "connection resolved, now busy");
                         }
                     });
                 } else {
-                    console.log(bodynotbusy.NumOfCus);
+                    console.log(LOG_ID + bodynotbusy.NumOfCus);
                     this.connection.query(sql, [bodynotbusy.jid_a, bodynotbusy.NumOfCus, bodynotbusy.AvailStatus], function (error, rows, fields) {
                         if (!!error) {
-                            //res.send("connection fail to resolve(avail)");
-                            console.log(error);
+                            console.log(LOG_ID + "connection fail to resolve(busy)");
+                            console.log(LOG_ID + error);
                         } else {
-                            console.log(rows);
+                            console.log(LOG_ID + rows);
                         }
                     });
                 }
             }
         });
-
     }
 
     async agentLookingForCustomer(req) {
@@ -388,7 +387,7 @@ class DB {
                 sklist[i] = allskill[i].Skill;
             }
             const agentEntry = await this.database.query("SELECT * FROM Agent_Table WHERE jid_a=?", [ag.jid_a]);
-            console.log(agentEntry);
+            console.log(LOG_ID + agentEntry);
             for (let i = 0; i < sklist.length; i++) {
                 if (agentEntry[0].Skill1 === sklist[i] || agentEntry[0].Skill2 === sklist[i] || agentEntry[0].Skill3 === sklist[i]) {
                     let ans = parseInt(i);
@@ -408,40 +407,40 @@ class DB {
                 let minfromq3 = await this.database.query("SELECT MIN(CustomerID) FROM Q3");
                 let mincusfromq3 = await this.database.query("SELECT * FROM Q3 WHERE CustomerID =?", [minfromq3[0]["MIN(CustomerID)"]]);
                 if (mincusfromq3 !== "") {
-                    console.log(mincusfromq3);
+                    console.log(LOG_ID + mincusfromq3);
                     TopCusList.push(mincusfromq3);
                 }
-                console.log("adding only the queues with the correct skills");
+                console.log(LOG_ID + "adding only the queues with the correct skills");
                 for (let j = 0; j < cuslist.length; j++) {
                     chosenCusList.push(TopCusList[cuslist[j]]);
                 }
                 let ans = this.chooseCustomer(chosenCusList);
                 if (ans == null) {
-                    console.log("no customers avail for the agent");
+                    console.log(LOG_ID + "no customers avail for the agent");
                     break;
                 }
                 let anstosend = ans[0];
                 let infotosend = {jid_a: ag.jid_a, jid_c: anstosend.JID_IM, agentAvailable: true};
-                console.log(infotosend);
+                console.log(LOG_ID + infotosend);
                 let chosenjid = infotosend.jid_c;
                 if (chosenjid != null) {
                     await this.database.query(cusagent, [0, infotosend.jid_a, chosenjid]);
                 }
                 await this.database.query("DELETE FROM Q1 WHERE JID_IM =?", [chosenjid]);
-                console.log("sent and del from Q1");
+                console.log(LOG_ID + "sent and del from Q1");
 
                 await this.database.query("DELETE FROM Q2 WHERE JID_IM =?", [chosenjid]);
-                console.log("sent and deleted from Q2");
+                console.log(LOG_ID + "sent and deleted from Q2");
 
                 await this.database.query("DELETE FROM Q3 WHERE JID_IM =?", [chosenjid]);
-                console.log("sent and deleted from Q3");
+                console.log(LOG_ID + "sent and deleted from Q3");
                 chosenCusList = [];
                 TopCusList = [];
                 console.log(z + " Customers have been scheduled");
             }
             return Promise.resolve(z);
         } catch (err) {
-            console.log(err);
+            console.log(LOG_ID + err);
         }
     }
 
@@ -450,36 +449,36 @@ class DB {
                     CALL CSUCCESS(@jid_a,@NumOfCus,@AvailStatus);";
         this.connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?", [body.jid_a], function (error, rows, fields) {
             if (!!error) {
-                console.log('Error in query AgentTable');
+                console.log(LOG_ID + 'Error in query AgentTable');
             } else {
-                console.log(rows);
+                console.log(LOG_ID + rows);
                 let bodybusy = {jid_a: body.jid_a, AvailStatus: 'Busy', NumOfCus: parseInt(rows[0].NumOfCus) + 1};
                 let bodynotbusy = {
                     jid_a: body.jid_a,
                     AvailStatus: 'Available',
                     NumOfCus: parseInt(rows[0].NumOfCus) + 1
                 };
-                console.log(rows);
-                console.log('successful query for the AgentTable\n');
+                console.log(LOG_ID + rows);
+                console.log(LOG_ID + 'successful query for the AgentTable\n');
                 if (rows[0].NumOfCus > 1) {
                     // console.log(bodybusy.NumOfCus);
                     this.connection.query(sql, [bodybusy.jid_a, bodybusy.NumOfCus, bodybusy.AvailStatus], function (error, rows, fields) {
                         if (!!error) {
                             res.send("connection fail to resolve(busy)");
-                            console.log(error);
+                            console.log(LOG_ID + error);
                         } else {
                             res.send("connection resolved, now busy");
                         }
                     });
                 } else {
-                    console.log(bodynotbusy.NumOfCus);
+                    console.log(LOG_ID + bodynotbusy.NumOfCus);
                     this.connection.query(sql, [bodynotbusy.jid_a, bodynotbusy.NumOfCus, bodynotbusy.AvailStatus], function (error, rows, fields) {
                         if (!!error) {
                             res.send("connection fail to resolve(avail)");
-                            console.log(error);
+                            console.log(LOG_ID + error);
                         } else {
                             res.send("connection resolved, still Available");
-                            console.log(rows);
+                            console.log(LOG_ID + rows);
 
                         }
                     });
@@ -488,7 +487,7 @@ class DB {
         });
     }
 
-    close() {
+    /*close() {
         return new Promise((resolve, reject) => {
             this.connection.end(err => {
                 if (err)
@@ -496,7 +495,7 @@ class DB {
                 resolve();
             });
         });
-    }
+    }*/
 
 }
 
