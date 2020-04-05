@@ -1,0 +1,21 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "backend for project",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "3-3",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "latest",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "mysql": "^2.18.1",
+    "rainbow-node-sdk": "^1.69.0"
+  },
+  "devDependencies": {
+    "comment-json": "^3.0.2"
+  }
+}
