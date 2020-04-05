@@ -97,7 +97,7 @@ var FillForm = Vue.extend({
       last_name: "",
       phone_number: "",
       selected_skill: "",
-      post_url: "http://10.12.190.247:3002/createguest",
+      post_url: "https://apisdkesc.sutd.org/createguest",
     };
   },
   methods: {
@@ -129,7 +129,7 @@ var FillForm = Vue.extend({
       this.guest_json["first_name"] = this.first_name;
       this.guest_json["last_name"] = this.last_name;
       this.guest_json["phone_number"] = this.phone_number;
-      this.guest_json["selected_skill"] = this.selected_skill;
+      this.guest_json["skill"] = this.selected_skill;
       console.log(this.guest_json);
 
       axios
@@ -138,7 +138,7 @@ var FillForm = Vue.extend({
             "Content-Type": "application/json",
           },
         })
-        .then(function (response) {
+        .then((response) => {
           // get guest id
           // then store in localStorage
           console.log(response);
@@ -151,16 +151,19 @@ var FillForm = Vue.extend({
           localStorage.guest_login = response.data.guest_login;
           localStorage.guest_password = response.data.guest_password;
           // true or false
-          if (localStorage.agentAvailable) {
-            this.$router.push(ChatRoom);
+          if (localStorage.agentAvailable == true) {
+        	this.$router.push('chatroom');
+        	console.log("push to chatroom");
           } else {
-            this.$router.push(Waiting);
+            this.$router.push('waiting');
+            console.log("push to waiting");
           }
         })
         .catch(function (error) {
           console.log(error);
         });
     },
+    
   },
 });
 
@@ -224,7 +227,7 @@ var ChatRoom = Vue.extend({
       endcalljson["id_c"] = localStorage.id_c;
       endcalljson["jid_a"] = localStorage.jid_a;
       console.log(endcalljson);
-      axios.post("http://10.12.190.247:3002/endcall", endcalljson);
+      axios.post("https://apisdkesc.sutd.org/endcall", endcalljson);
       localStorage.clear();
 
       this.$router.push("Bye");
@@ -426,7 +429,7 @@ var ChatRoom = Vue.extend({
                       // Ryan IP
                       axios
                         .post(
-                          "http://10.12.66.69:1337/update/cSuccess",
+                          "https://apisdkesc.sutd.org/update/cSuccess",
                           temp_json
                         )
                         .then(function (res) {
@@ -540,13 +543,13 @@ var Waiting = Vue.extend({
         // every 4 seconds check whether or not agent is available
         // Ryan IP
         axios
-          .post("http:// /cusagent", { jid_c: localStorage.jid_c })
+          .post("https://apisdkesc.sutd.org/cusagent", { jid_c: localStorage.jid_c })
           .then((res) => {
-            if (res.avail == true) {
+            if (res.data.agentAvailable == true) {
               // sometimes need res.body.field
-              localStorage.jid_c = res.jid_c;
-              localStorage.jid_a = res.jid_a;
-              this.$router.push(ChatRoom);
+              localStorage.jid_c = res.data.jid_c;
+              localStorage.jid_a = res.data.jid_a;
+              this.$router.push('chatroom');
             } else {
               // do nothing
               console.log("Still no agent available");
