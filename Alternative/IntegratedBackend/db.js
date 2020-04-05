@@ -1,4 +1,5 @@
 const mysql = require('mysql');
+const Database = require('./database.js');
 
 const LOG_ID = "DB - ";
 
@@ -8,12 +9,13 @@ class DB {
         this.database = null;
     }
 
-    start(config) {
+    start(configConn, configDatabase) {
         return new Promise((resolve, reject) => {
-            this.connection = mysql.createConnection(config);
+            this.connection = mysql.createConnection(configConn);
+            this.database = new Database(configDatabase);
             this.connection.connect(function (error) {
                 if (!!error) {
-                    console.log(LOG_ID + "dabase failed to start");
+                    console.log(LOG_ID + "database failed to start");
                     console.log(LOG_ID + error);
                     reject();
                 } else {
@@ -21,6 +23,8 @@ class DB {
                     resolve();
                 }
             });
+
+
         });
     }
 
