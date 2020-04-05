@@ -1,0 +1,44 @@
+<html xmlns:v-on="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="development.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <div class="form" v-show="formisShow">
+        <label>Name</label>
+        <input
+          type="text"
+          name=""
+          id="customer_name"
+          v-model="customer_name"
+
+        />
+        <br />
+        <label>Phone number</label>
+        <input
+          type="text"
+          name=""
+          id="customer_number"
+          v-model="customer_number"
+        />
+        <br />
+        <select id="select_skill">
+          <option>Please choose what you want to consult</option>
+          <option>Technical</option>
+          <option>Billing</option>
+          <option>General</option>
+        </select>
+        <br />
+        <button class="submit" onclick="submitSkill()" type="submit">Start Chatting</button>
+      </div>
+      <div class="live_chat">
+        <button class="open_button" v-on:click="openForm()" v-show="openButtonisShow">Live Chat</button>
+        <button class="exit_button" v-on:click="closeForm()" v-show="closeButtonisShow">Go back</button>
+      </div>
+    </div>
+  </body>
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="development.js"></script>
+</html>

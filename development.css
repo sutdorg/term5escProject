@@ -1,0 +1,86 @@
+.open_button {
+    width: 270px; 
+	height: 40px; 
+	border-width: 0px; 
+	border-radius: 3px; 
+	background: rgb(14, 104, 194); 
+	cursor: pointer; 
+	outline: none; 
+	font-family: Microsoft YaHei; 
+	color: white; 
+    font-size: 17px;
+    font-weight: 600;
+    position: fixed;
+}
+
+#app {
+    position: fixed;
+}
+
+#customer_number {
+	border: 1px solid #ccc;
+	padding: 7px 0px;
+	border-radius: 3px;
+	padding-left:5px;
+	margin-bottom: 1rem;
+}
+
+#customer_name {
+	border: 1px solid #ccc;
+	padding: 7px 0px;
+	border-radius: 3px;
+	padding-left:5px;
+	margin-bottom: 1rem;
+	margin-left: 3.5rem;
+
+}
+
+#select_skill {
+	position: relative;
+	display: block;
+	margin: 0 auto;
+	width: 100%;
+	max-width: 325px;
+	font-size: 14px;
+	vertical-align: middle;
+	text-align: left;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
+#select_skill option {
+	color: black;
+}
+#select_skill::placeholder {
+	color: black;
+}
+
+.submit {
+	float: right;
+	width: 115px;
+	height: 22px;
+	border-width: 0px;
+	border-radius: 3px;
+	background: rgb(14, 104, 194);
+	cursor: pointer;
+	outline: none;
+	font-family: Microsoft YaHei;
+	color: white;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.exit_button {
+	float: left;
+	width: 70px;
+	height: 22px;
+	border-width: 0px;
+	border-radius: 3px;
+	background: rgb(14, 104, 194);
+	cursor: pointer;
+	outline: none;
+	font-family: Microsoft YaHei;
+	color: white;
+	font-size: 14px;
+	font-weight: 600;
+}
