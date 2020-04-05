@@ -3,7 +3,7 @@
 const NodeSDK = require("rainbow-node-sdk");
 
 const logger = require('./logger.js');
-const db = require("./temp.js");
+const db = require("./db.js");
 
 const LOG_ID = "SDK - ";
 
@@ -41,22 +41,16 @@ class SDK {
 
             this.nodeSDK.events.on("rainbow_oncontactpresencechanged", (contact) => {
                 //logger.log("debug", LOG_ID + "Presence Changed");
-                //logger.log("debug", LOG_ID + contact.displayName + " presence changed to " + contact.presence);
-                if(contact.presence === "online"){
-                    db.offlineToOnline();
-                }else{
-                    db.onlineToOffline();
-                }
-                axios.patch('http://10.12.66.69:1337/update/agent/avail', {
+                //logger.log("debug", LOG_ID + contact.displayName + " presence changed to " + contact.presence);\
+                let agentDetails = {
                     "jid_a": contact.jid_im,
                     "AvailStatus": contact.presence
-                })
-                    .then(res => {
-                        //logger.log("debug", LOG_ID + res);
-                    })
-                    .catch(error => {
-                        //logger.log("error", LOG_ID + error);
-                    });
+                };
+                if (contact.presence === "online") {
+                    db.offlinetoOnline(agentDetails);
+                } else {
+                    db.onlineToOffline(agentDetails);
+                }
             });
         });
     }
@@ -133,7 +127,7 @@ class SDK {
     endCall(jid_a, id_c, resFE) {
         //logger.log("debug", LOG_ID + "Ending call...");
         this.nodeSDK.admin.deleteUser(id_c).then((user) => {
-            let agentDetails = {"jid_a" : jid_a};
+            let agentDetails = {"jid_a": jid_a};
             db.resolveCall(agentDetails)
                 .then(res => {
                     //logger.log("debug", LOG_ID + res);

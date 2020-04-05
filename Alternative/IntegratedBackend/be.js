@@ -1,22 +1,18 @@
-"use strict"
+"use strict";
 
 const express = require('express');
 const cors = require('cors');
-const http = require('http');
 
-const logger = require('./logger');
 const sdk = require('./sdk.js');
-const db = require('./temp.js');
+const db = require('./db.js');
 
-const LOG_ID = "BE - ";
-
-class BE{
+class BE {
 
     constructor() {
-        this.protocol = "http";
-        this.port = 80;
+        this.port = process.env.PORT || 3000;
     }
-    start(){
+
+    start() {
         return new Promise((resolve) => {
             let app = express();
             app.use(cors());
@@ -37,12 +33,17 @@ class BE{
                 //logger.log("debug", LOG_ID + "/cancelcall called");
                 sdk.cancelCall(req.body);
             });
-            
+
             app.post('/cusagent', function (req, res) {
                 db.waiting(req.body, res);
             });
 
-            http.createServer(app).listen(this.port, () => {
+            app.post('/update/cSuccess', function (req, res) {
+                // console.log("STARTCONNECTIONSUCCESS/n");
+                db.updateAgent(req.body, res);
+            });
+
+            app.listen(this.port, () => {
                 //logger.log("info", LOG_ID + 'server started');
                 resolve();
             });
