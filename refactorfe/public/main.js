@@ -174,13 +174,13 @@ var ChatRoom = Vue.extend({
   </div>
   <div class="chat-body">
     <!-- <div class="agent_chat" v-for="item of agent_msgs" v-bind:key="item.id">
-      <img src="../assets/agent_logo.png" />
+      <img src="./assets/agent_logo.png" />
       <span class="agent_msg">{{item}}</span>
       <br />
     </div> -->
     <!-- <div class="guest_chat" v-for="item of guest_msgs" v-bind:key="item.id">
       <span class="guest_msg">{{item}}</span>
-      <img class="guest_logo" src="../assets/guest_logo.png" />
+      <img class="guest_logo" src="./assets/guest_logo.png" />
       <br />
     </div> -->
     <div class="single" v-for="item of msgs" v-bind:key="item.id">
