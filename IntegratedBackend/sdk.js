@@ -31,8 +31,7 @@ class SDK {
             });
 
             this.nodeSDK.events.on("rainbow_onready", () => {
-                console.log(LOG_ID + "rainbow stared");
-                console.log(LOG_ID + "Initialize agents");
+                console.log(LOG_ID + "rainbow started");
                 this.initAgents().then(() => {
                     resolve();
                 });
@@ -79,42 +78,69 @@ class SDK {
         });
     }
 
-    initAgents() {
+    async initAgents() {
+        let contacts = this.nodeSDK.contacts.getAll();                                              // get current list of contacts
+        let arrayUsers = await this.nodeSDK.admin.getAllUsers("small");                             // get all users in company
+        let count = 0;
         return new Promise((resolve) => {
             console.log(LOG_ID + "Initializing agents...");
-            this.nodeSDK.admin.getAllUsers("full").then((contacts) => {
-                contacts.forEach(function (entry) {
-                    if (!(entry.roles.includes("admin") || entry.roles.includes("guest"))) {
-                        console.log(LOG_ID + "Adding " + entry.displayName + " to database...");
-                        let agentDetails = {
-                            "AgentID": 0,
-                            "Skill1": entry.tags[0],
-                            "Skill2": entry.tags[1],
-                            "Skill3": entry.tags[2],
-                            "Name": entry.displayName,
-                            "AvailStatus": entry.presence,
-                            "NumOfCus": 0,
-                            "jid_a": entry.jid_im
-                        };
-                        db.addingAgent(agentDetails)
-                            .then(res => {
-                                console.log(LOG_ID + res);
-                            })
-                            .catch(error => {
-                                console.log(LOG_ID + error);
+            arrayUsers.forEach((user) => {                                                       // loop through all users in company
+                this.nodeSDK.contacts.getContactById(user.id, true).then((contact) => {         // get contact object from user.id
+                    if (!(contact.roles.includes("admin") || contact.roles.includes("guest"))) {    // ignore if contact is admin or guest
+                        if (!contacts.includes(contact)) {
+                            this.nodeSDK.contacts.addToContactsList(contact).then(() => {           // if contact is not in list of contacts, add to list
+                                this.sendAgent(contact).then(() => {                                // send agent detail to database
+                                    count++;
+                                    if (count === arrayUsers.length) {
+                                        resolve();                                                  // resolve only after last iteration
+                                    }
+                                });
                             });
+                        } else {
+                            this.sendAgent(contact).then(() => {                                    // if contact is in list of contacts, send agent
+                                count++;
+                                if (count === arrayUsers.length) {
+                                    resolve();                                                      // resolve only after last iteration
+                                }
+                            });
+                        }
+                    } else {
+                        count++;
+                        if (count === arrayUsers.length) {
+                            resolve();                                                              // resolve only after last iteration
+                        }
                     }
                 });
+            });
+        });
+    }
+
+    sendAgent(contact) {
+        return new Promise((resolve) => {
+            console.log(LOG_ID + "Adding " + contact.displayName + " to database...");
+            let skill = [];
+            if (contact.tags !== undefined) {
+                skill = contact.tags;
+            }
+            let agentDetails = {
+                "AgentID": 0,
+                "Skill1": skill[0],
+                "Skill2": skill[1],
+                "Skill3": skill[2],
+                "Name": contact.displayName,
+                "AvailStatus": contact.presence,
+                "NumOfCus": 0,
+                "jid_a": contact.jid_im
+            };
+            db.addingAgent(agentDetails).then(() => {
                 resolve();
-            }).catch((err) => {
-                console.log(LOG_ID + err);
             });
         });
     }
 
     endCall(jid_a, id_c, resFE) {
         console.log(LOG_ID + "Ending call...");
-        this.nodeSDK.admin.deleteUser(id_c).then((user) => {
+        this.nodeSDK.admin.deleteUser(id_c).then(() => {
             let agentDetails = {"jid_a": jid_a};
             db.resolveCall(agentDetails)
                 .then(res => {
@@ -130,6 +156,10 @@ class SDK {
             console.log(LOG_ID + err);
         });
     }
+
+    // TODO: bot for administrative purposes
+    // User: Reroute customers
+    // Admin: Add agent to database?
 
     // TODO: cancelCall
     // DB need to handle cancel call
@@ -153,6 +183,7 @@ class SDK {
             //logger.log("error", LOG_ID + err);
         });
     }*/
+
 
     /*
     restart() {
