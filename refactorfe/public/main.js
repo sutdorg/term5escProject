@@ -151,7 +151,8 @@ var FillForm = Vue.extend({
           localStorage.guest_login = response.data.guest_login;
           localStorage.guest_password = response.data.guest_password;
           // true or false
-          if (localStorage.agentAvailable == true) {
+          console.log(localStorage.agentAvailable)
+          if (localStorage.agentAvailable == 'true') {
         	this.$router.push('chatroom');
         	console.log("push to chatroom");
           } else {
@@ -424,17 +425,17 @@ var ChatRoom = Vue.extend({
                       // should send to backend that conversation is established
 
                       // send to Ryan saying chat is started
-                      var temp_json = {};
-                      temp_json["jid_a"] = localStorage.jid_a;
-                      // Ryan IP
-                      axios
-                        .post(
-                          "https://apisdkesc.sutd.org/update/cSuccess",
-                          temp_json
-                        )
-                        .then(function (res) {
-                          console.log(res);
-                        });
+                      // var temp_json = {};
+                      // temp_json["jid_a"] = localStorage.jid_a;
+                      // // Ryan IP
+                      // axios
+                      //   .post(
+                      //     "https://apisdkesc.sutd.org/update/cSuccess",
+                      //     temp_json
+                      //   )
+                      //   .then(function (res) {
+                      //     console.log(res);
+                      //   });
                       document.addEventListener(
                         rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
                         onNewMessageReceived
