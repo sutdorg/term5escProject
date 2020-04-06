@@ -253,6 +253,7 @@ class DB {
             console.log(LOG_ID + "ans is ", ans);
             if (ans == null) {
                 console.log(LOG_ID + "no customers to be queued");
+                await this.updateAgentminuscus(ag,res);
                 return Promise.resolve("no customers to be queued");
             } else {
                 let anstosend = ans[0];
@@ -496,6 +497,34 @@ class DB {
                         }
                     });
                 }
+            }
+        });
+    }
+
+    async updateAgentminuscus(body, res) {
+        let sql = "SET @jid_a = ?;SET @NumOfCus = ?; SET @AvailStatus = ?; \
+                    CALL CSUCCESS(@jid_a,@NumOfCus,@AvailStatus);";
+        this.connection.query("SELECT * FROM Agent_Table WHERE jid_a = ?", [body.jid_a], (error, rows, fields) => {
+            if (!!error) {
+                console.log(LOG_ID + 'Error in query AgentTable');
+            } 
+            else {
+                console.log(LOG_ID + rows);
+                let bodyag = {jid_a: body.jid_a, AvailStatus: 'Available', NumOfCus: parseInt(rows[0].NumOfCus) - 1};
+                console.log(LOG_ID + rows);
+                console.log(LOG_ID + 'successful query for the AgentTable\n');
+                console.log(LOG_ID + bodynotbusy.NumOfCus);
+                this.connection.query(sql, [bodyag.jid_a, bodyag.NumOfCus, bodyag.AvailStatus], (error, rows, fields) => {
+                        if (!!error) {
+                            res.send("connection fail to resolve(never minus)");
+                            console.log(LOG_ID + error);
+                        } else {
+                            res.send("Agent number of customers minus 1");
+                            console.log(LOG_ID + rows);
+
+                        }
+                    });
+            
             }
         });
     }
