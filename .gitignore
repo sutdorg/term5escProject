@@ -6,3 +6,8 @@ node_modules/
 !.elasticbeanstalk/*.global.yml
 
 .idea/*
+IntegratedBackend/package-lock.json
+IntegratedBackend/.idea/IntegratedBackend.iml
+IntegratedBackend/.idea/misc.xml
+IntegratedBackend/.idea/modules.xml
+IntegratedBackend/.idea/vcs.xml
