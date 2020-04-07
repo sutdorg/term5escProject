@@ -3,6 +3,7 @@
 const json = require('comment-json');
 const fs = require('fs');
 const configfileSDK = fs.readFileSync("./configSDK.json");
+const configfileDB = fs.readFileSync("./configDB.json");
 
 const sdk = require('./sdk.js');
 const backend = require('./be.js');
@@ -10,17 +11,11 @@ const database = require('./db.js');
 
 const LOG_ID = "APP - ";
 
-let txt = configfileSDK.toString();
-let configSDK = json.parse(txt);
+let txtSDK = configfileSDK.toString();
+let configSDK = json.parse(txtSDK);
 
-let configDB = {
-    "host": "localhost",
-    "user": "escdb",
-    "password": "HSGAjPLSrhRchGct",
-    "database": "escdb",
-    "port": "3306",
-    "multipleStatements": true
-};
+let txtDB = configfileDB.toString();
+let configDB = json.parse(txtDB);
 
 database.start(configDB).then(res => {
     sdk.start(configSDK).then(res => {

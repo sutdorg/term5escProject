@@ -43,7 +43,7 @@ class DB {
     async queueingReq(guestDetails) {
         let sklist = ['one', 'two', 'three', 'four', 'five'];
         let cus = guestDetails;
-        console.log(cus);
+        console.log(LOG_ID + cus);
         let cushead = cus.Skill;
         console.log(LOG_ID + "this is cushead" + cushead);
         let cussql1 = "SET @CustomerID = ?;SET @FirstName = ?; SET @LastName = ?; SET @StrID = ?; SET @JID_IM =?; SET @Skill = ?; \
@@ -82,9 +82,9 @@ class DB {
         }
 
         if (agentChosen != null) {
-            console.log(agentChosen);
-            console.log(agentDetails);
-            console.log("the agent chosen is" + agentDetails[agentChosen]);
+            console.log(LOG_ID + agentChosen);
+            console.log(LOG_ID + agentDetails);
+            console.log(LOG_ID + "the agent chosen is" + agentDetails[agentChosen]);
             let chosen_jid = agentDetails[agentChosen].jid_a;
             let agentcorrectAvailStatus = null;
             if (agentDetails[agentChosen].NumOfCus === 2) {
@@ -99,10 +99,10 @@ class DB {
             };
             await this.database.query(agentsql, [ag.AgentID, ag.AvailStatus, ag.NumOfCus]);
             let realagentChosen = parseInt(agentChosen) + 1;
-            console.log(realagentChosen);
-            console.log('update agent status success');
+            console.log(LOG_ID + realagentChosen);
+            console.log(LOG_ID + 'update agent status success');
             //there is an issue here if the number is not ordered properly better to query for the jid_a and use it as the identifier instead
-            console.log(chosen_jid);
+            console.log(LOG_ID + chosen_jid);
             return Promise.resolve({"jid_a": chosen_jid, "jid_c": cus.JID_IM, "agentAvailable": true});
         }
 
@@ -179,7 +179,7 @@ class DB {
         try {
             await this.database.query(sql, [ag.jid_a, "Online"]);
             const allskill = await this.database.query('SELECT * FROM Skills');
-            console.log("LOG_ID + forming sklist");
+            console.log(LOG_ID + "forming sklist");
             for (let i = 0; i < allskill.length; i++) {
                 sklist[i] = allskill[i].Skill;
             }
