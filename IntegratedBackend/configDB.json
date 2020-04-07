@@ -1,1 +1,8 @@
-{}
+{
+  "host": "localhost",
+  "user": "escdb",
+  "password": "HSGAjPLSrhRchGct",
+  "database": "escdb",
+  "port": "3306",
+  "multipleStatements": true
+}
