@@ -21,16 +21,8 @@ let configDB = {
     "port": "3306",
     "multipleStatements": true
 };
-let configDB2 = {
-    "host": "localhost",
-    "user": "escdb",
-    "password": "HSGAjPLSrhRchGct",
-    "database": "escdb",
-    "port": "3306",
-    "multipleStatements": true
-};
 
-database.start(configDB, configDB2).then(res => {
+database.start(configDB).then(res => {
     sdk.start(configSDK).then(res => {
         backend.start().then(res => {
             console.log(LOG_ID + "All services started");
