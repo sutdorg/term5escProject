@@ -1,32 +1,13 @@
-<!DOCTYPE html><head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.js"></script>
-  <script>
-      var get_url = "https://downloads.freemdict.com/Recommend/dictionary.json"
-      var dicts;
-      function getjson () {
-        axios
-        .get(get_url)
-        .then(function(response) {
-          // get guest id
-          // then store in localStorage
-          console.log(response.data.bulletinboard);
-          dicts = response.data.dictionary
-          console.log(dicts[1])
-        })
-        .catch(function(error) {
-          console.log(error);
-        });
-      }
-      function testlocalStorage() {
-        console.log(localStorage.asfasf)
-      }
-  </script>
-</head>
-
-<!-- <body>
-    <button onclick="getjson()">Click me</button>
-    <button onclick="testlocalStorage()">Test localStorage</button>
-</body> -->
-
-
-<div class="waiting_screen>Please wait a while, we are looking for a suitable agent for you.<div class="load-container"> <div class="loader"></div></div></div>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script>
+      document.write(localStorage.time);
+      localStorage.setItem("time", Date.now());
+    </script>
+  </head>
+  <body></body>
+</html>

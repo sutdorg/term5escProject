@@ -53,7 +53,7 @@ document.addEventListener(rainbowSDK.RAINBOW_ONREADY, onReady);
 // end of import rainbowSDK
 
 var LiveChatButton = Vue.extend({
-  template: `  <div class="livechatbutton">
+  template: `  <div class="livechatbutton" >
   <button class="open_button" v-on:click="openForm()">Live Chat</button>
 </div>`,
   data() {
@@ -151,12 +151,12 @@ var FillForm = Vue.extend({
           localStorage.guest_login = response.data.guest_login;
           localStorage.guest_password = response.data.guest_password;
           // true or false
-          console.log(localStorage.agentAvailable)
-          if (localStorage.agentAvailable == 'true') {
-        	this.$router.push('chatroom');
-        	console.log("push to chatroom");
+          console.log(localStorage.agentAvailable);
+          if (localStorage.agentAvailable == "true") {
+            this.$router.push("chatroom");
+            console.log("push to chatroom");
           } else {
-            this.$router.push('waiting');
+            this.$router.push("waiting");
             console.log("push to waiting");
           }
         })
@@ -164,7 +164,17 @@ var FillForm = Vue.extend({
           console.log(error);
         });
     },
-    
+  },
+  mounted() {
+    setTimeout(() => {
+      if (localStorage.jid_c != undefined) {
+        if (localStorage.agentAvailable == "true") {
+          this.$router.push("chatroom");
+        } else {
+          this.$router.push("waiting");
+        }
+      }
+    }, 0);
   },
 });
 
@@ -544,13 +554,15 @@ var Waiting = Vue.extend({
         // every 4 seconds check whether or not agent is available
         // Ryan IP
         axios
-          .post("https://apisdkesc.sutd.org/cusagent", { jid_c: localStorage.jid_c })
+          .post("https://apisdkesc.sutd.org/cusagent", {
+            jid_c: localStorage.jid_c,
+          })
           .then((res) => {
             if (res.data.agentAvailable == true) {
               // sometimes need res.body.field
               localStorage.jid_c = res.data.jid_c;
               localStorage.jid_a = res.data.jid_a;
-              this.$router.push('chatroom');
+              this.$router.push("chatroom");
             } else {
               // do nothing
               console.log("Still no agent available");
