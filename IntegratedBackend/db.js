@@ -54,6 +54,8 @@ class DB {
                        CALL EDITQ33ENTRY(@CustomerID,@FirstName,@LastName,@StrID,@JID_IM,@Skill);";
         let agentsql = "SET @AgentID = ?;SET @AvailStatus = ?;SET @NumOfCus = ?; \
                         CALL AGENTSTATUS(@AgentID,@AvailStatus,@NumOfCus);";
+        let ongoingcall = "SET @CALLID = ?;SET @jid_a = ?; SET @jid_c = ?;\
+                        CALL ONGOING(@CALLID,@jid_a,@jid_c)";
         let skills = await this.database.query("SELECT * FROM Skills");
         for (let i = 0; i < skills.length; i++) {
             sklist[i] = skills[i].Skill;
@@ -103,7 +105,8 @@ class DB {
             console.log(LOG_ID + 'update agent status success');
             //there is an issue here if the number is not ordered properly better to query for the jid_a and use it as the identifier instead
             console.log(LOG_ID + chosen_jid);
-            return Promise.resolve({"jid_a": chosen_jid, "jid_c": cus.JID_IM, "agentAvailable": true});
+            await this.database.query(ongoingcall,[chosen_jid,cus.jid_c]);
+            return Promise.resolve({"jid_a": chosen_jid, "jid_c": cus.jid_c, "agentAvailable": true});
         }
 
         console.log(LOG_ID + cushead);
@@ -242,12 +245,16 @@ class DB {
     }
 
     async waiting(guestDetails, resFE) {
+        let ongoingcall = "SET @CALLID = ?;SET @jid_a = ?; SET @jid_c = ?;\
+        CALL ONGOING(@CALLID,@jid_a,@jid_c)";
         let rows = await this.database.query("SELECT * FROM UpcomingCall WHERE jid_c =?", [guestDetails.jid_c]);
         if (rows !== null || typeof (rows[0]) !== 'undefined') {
             console.log(LOG_ID + rows);
             resFE.send({"jid_a": rows[0].jid_a, "jid_c": rows[0].jid_c, "agentAvailable": true});
             await this.database.query("DELETE FROM UpcomingCall WHERE idUpcomingCall= ?", [rows[0].idUpcomingCall]);
             console.log(LOG_ID + 'successful Deletion of id\n');
+            await this.database.query(ongoingcall,[0,rows[0].jid_a,rows[0].jid_c]);
+            console.log("added entry to Ongoing");
         } else {
             resFE.send({"agentAvailable": false});
         }
@@ -441,8 +448,10 @@ class DB {
         console.log(LOG_ID + bodyag.NumOfCus);
         await this.database.query(sql, [bodyag.jid_a, bodyag.NumOfCus, bodyag.AvailStatus]);
     }
-
-
+    async pullCalllog(body){
+    let agentcus = await this.database.query("SELECT * FROM OngoingCalls WHERE jid_a = ?",[body.jid_a]);
+    return Promise.resolve(agentcus);
+    }
 }
 
 module.exports = new DB();
