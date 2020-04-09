@@ -28,7 +28,7 @@ class BE {
 
             app.post('/endcall', function (req, res) {
                 console.log(LOG_ID + "/endcall called");
-                sdk.endCall(req.body.jid_a, req.body.id_c, res);
+                sdk.endCall(req.body.jid_a, req.body.id_c, req.body.jid_c, res);
             });
 
             // TODO: Cancel call when tab is closed before agent is connected
