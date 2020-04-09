@@ -240,6 +240,7 @@ var ChatRoom = Vue.extend({
       var endcalljson = {};
       endcalljson["id_c"] = localStorage.id_c;
       endcalljson["jid_a"] = localStorage.jid_a;
+      endcalljson["jid_c"] = localStorage.jid_c;
       console.log(endcalljson);
       axios.post(api_addr + "endcall", endcalljson);
       localStorage.clear();
@@ -552,6 +553,7 @@ var ChatRoom = Vue.extend({
         var endcalljson = {};
         endcalljson["id_c"] = localStorage.id_c;
         endcalljson["jid_a"] = localStorage.jid_a;
+        endcalljson["jid_c"] = localStorage.jid_c;
         console.log(endcalljson);
         axios.post(api_addr + "endcall", endcalljson);
         localStorage.clear();
