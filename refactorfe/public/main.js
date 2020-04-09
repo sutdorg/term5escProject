@@ -3,7 +3,7 @@ import rainbowSDK from "./rainbow-sdk.min.js"; // If you do not use the bundler
 // import rainbowSDK from 'rainbow-web-sdk'; // If you use the bundler (for example - Webpack)
 
 var Conversation = "";
-var api_addr = "https://apisdkesc.sutd.org/";
+var api_addr = "https://apisdkesc.sutd.org/"; // if you deploy somewhere else, you will need to modify this
 
 var onReady = function onReady() {
   console.log("[Hello World] :: On SDK Ready !");
