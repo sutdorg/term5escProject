@@ -138,10 +138,10 @@ class SDK {
         });
     }
 
-    endCall(jid_a, id_c, resFE) {
+    endCall(jid_a, id_c, jid_c, resFE) {
         console.log(LOG_ID + "Ending call...");
         this.nodeSDK.admin.deleteUser(id_c).then(() => {
-            let agentDetails = {"jid_a": jid_a};
+            let agentDetails = {"jid_a": jid_a, "jid_c": jid_c};
             db.resolveCall(agentDetails)
                 .then(res => {
                     console.log(LOG_ID + "User deleted");
