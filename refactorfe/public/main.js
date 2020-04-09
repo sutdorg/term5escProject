@@ -3,6 +3,7 @@ import rainbowSDK from "./rainbow-sdk.min.js"; // If you do not use the bundler
 // import rainbowSDK from 'rainbow-web-sdk'; // If you use the bundler (for example - Webpack)
 
 var Conversation = "";
+var api_addr = "https://apisdkesc.sutd.org/";
 
 var onReady = function onReady() {
   console.log("[Hello World] :: On SDK Ready !");
@@ -97,10 +98,11 @@ var FillForm = Vue.extend({
       last_name: "",
       phone_number: "",
       selected_skill: "",
-      post_url: "https://apisdkesc.sutd.org/createguest",
+      post_url: api_addr + "createguest",
     };
   },
   methods: {
+    // submit button
     submit() {
       // do some check
       if (
@@ -176,6 +178,7 @@ var FillForm = Vue.extend({
       }
     }, 0);
   },
+  destroyed() {},
 });
 
 var ChatRoom = Vue.extend({
@@ -238,7 +241,7 @@ var ChatRoom = Vue.extend({
       endcalljson["id_c"] = localStorage.id_c;
       endcalljson["jid_a"] = localStorage.jid_a;
       console.log(endcalljson);
-      axios.post("https://apisdkesc.sutd.org/endcall", endcalljson);
+      axios.post(api_addr + "endcall", endcalljson);
       localStorage.clear();
 
       this.$router.push("Bye");
@@ -440,7 +443,7 @@ var ChatRoom = Vue.extend({
                       // // Ryan IP
                       // axios
                       //   .post(
-                      //     "https://apisdkesc.sutd.org/update/cSuccess",
+                      //     api_addr + "update/cSuccess",
                       //     temp_json
                       //   )
                       //   .then(function (res) {
@@ -531,6 +534,34 @@ var ChatRoom = Vue.extend({
     clearInterval(this.timer1);
     clearInterval(this.timer2);
   },
+  mounted() {
+    let _this = this;
+    window.onbeforeunload = function (e) {
+      if (_this.$route.fullPath == "/chatroom") {
+        e = e || window.event;
+        // IE8 Firefox 4
+        if (e) {
+          e.returnValue = "";
+        }
+        // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
+        this.console.log("customer closes chatroom, sending ");
+        // end chat
+        console.log("end chat here");
+        // close conversation
+        rainbowSDK.conversations.closeConversation(Conversation);
+        var endcalljson = {};
+        endcalljson["id_c"] = localStorage.id_c;
+        endcalljson["jid_a"] = localStorage.jid_a;
+        console.log(endcalljson);
+        axios.post(api_addr + "endcall", endcalljson);
+        localStorage.clear();
+        //
+        return "";
+      } else {
+        window.onbeforeunload = null;
+      }
+    };
+  },
 });
 
 var Bye = Vue.extend({
@@ -554,7 +585,7 @@ var Waiting = Vue.extend({
         // every 4 seconds check whether or not agent is available
         // Ryan IP
         axios
-          .post("https://apisdkesc.sutd.org/cusagent", {
+          .post(api_addr + "cusagent", {
             jid_c: localStorage.jid_c,
           })
           .then((res) => {
@@ -571,6 +602,33 @@ var Waiting = Vue.extend({
         // remember to get agent id
       }, 0);
     }, 4000);
+    // close tab
+    let _this = this;
+    window.onbeforeunload = function (e) {
+      if (_this.$route.fullPath == "/waiting") {
+        e = e || window.event;
+        // IE8 Firefox 4
+        if (e) {
+          e.returnValue = "";
+        }
+        // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
+        this.console.log("customer closes waiting, sending cancelcall");
+
+        // axios
+        //   .post(api_addr + "cancelcall", {
+        //     jid_c: localStorage.jid_c, // TODO:
+        //   })
+        //   .then((res) => {
+        //     // do nothing
+        //   });
+        return "";
+      } else {
+        window.onbeforeunload = null;
+      }
+    };
+  },
+  beforeDestroy() {
+    clearInterval(this.timer0);
   },
 });
 
