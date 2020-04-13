@@ -208,16 +208,18 @@ class SDK {
     /**
      * Reroute command method: To handle !reroute command, routes indicated customer
      * @param {string[]}    arg         array of arguments
-     * @param {string}      arg[0]      customer's IM id
+     * @param {string}      arg[0]      customer's String id
      * @param {string}      arg[1]      new skill to route customer to
      * @param               message
      */
-    rerouteCommand(arg, message) {
+    async rerouteCommand(arg, message) {
         if (arg.length !== 2) {
             this.nodeSDK.im.sendMessageToJid("Type '!reroute <Customerid> <skill>' to reroute user to another agent with the required skill", message.fromJid);
         } else {
-            // TODO: db.reroute(arg)
-            // db.reroute(arg);
+            let contact = await this.getContactByID(arg[0]);
+            let body = {"jid_c": contact.jid_im, "Skill": arg[1]};
+            await db.rerouteCall(body);
+            this.nodeSDK.im.sendMessageToJid("Customer has been rerouted!", message.fromJid);
         }
     }
 
