@@ -293,8 +293,23 @@ var ChatRoom = Vue.extend({
       console.log("i am retrieving message, timestamp:" + new Date().getTime());
     },
 
-    init_conversation(contactJID) {
-      // var contactJID = localStorage.jid_a; // agent JID
+    onNewMessageReceived(event) {
+      // let message = event.detail.message;
+      this.conversation_i = event.detail.conversation;
+      // Do something with the new message received
+
+      event.detail.message.then(function (res) {
+        console.log(res);
+        // console.log()
+      });
+      // new messages should be pushed to msgs
+      // this.msgs.push();
+    },
+  },
+
+  mounted() {
+    let init_conversation = function() {
+      var contactJID = localStorage.jid_a; // agent JID
       console.log("This agent JID is " + contactJID);
       var selectedContact = null;
       /* Handler called when user clicks on a contact */
@@ -345,6 +360,20 @@ var ChatRoom = Vue.extend({
                   //   .then(function (res) {
                   //     console.log(res);
                   //   });
+                  let onNewMessageReceived = function (event) {
+                    let message = event.detail.message;
+                    console.log(message);
+                    // let Conversation = event.detail.conversation;
+                    console.log(message["data"]);
+                    var msgs_t = JSON.parse(localStorage.msgs);
+                    msgs_t.push({
+                      from: "agent",
+                      me: false,
+                      content: message["data"],
+                    });
+                    localStorage.msgs = JSON.stringify(msgs_t);
+                    // Do something with the new message received
+                  };
                   document.addEventListener(
                     rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
                     onNewMessageReceived
@@ -366,43 +395,7 @@ var ChatRoom = Vue.extend({
             console.log(err);
           });
       }
-    },
-
-    onNewMessageReceived(event) {
-      // let message = event.detail.message;
-      this.conversation_i = event.detail.conversation;
-      // Do something with the new message received
-
-      event.detail.message.then(function (res) {
-        console.log(res);
-        // console.log()
-      });
-      // new messages should be pushed to msgs
-      // this.msgs.push();
-    },
-  },
-
-  mounted() {
-    // for test only
-    // this.timer4 = setTimeout(() => {
-    //   var myRainbowLogin =
-    //     "93pn2uk4c30c6362pw4r9qo5n50ctb0tanldb9bt@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
-    //   var myRainbowPassword = "X,V/j}776~3QXjuF1M3xnjY4US]P38d[Tjz@Rp<4"; // Replace by your password
-
-    //   // The SDK for Web is ready to be used, so you can sign in
-    //   console.log("Start logging in");
-    //   rainbowSDK.connection
-    //     .signin(myRainbowLogin, myRainbowPassword)
-    //     .then(function(account) {
-    //       console.log("login successful");
-    //       // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
-    //     })
-    //     .catch(function(err) {
-    //       console.log("login error");
-    //       console.log(err);
-    //       // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
-    //     });
-    // }, 1);
+    };
 
     this.timer0 = setTimeout(() => {
       if (localStorage.msgs != undefined) {
@@ -471,22 +464,7 @@ var ChatRoom = Vue.extend({
         .then(function (account) {
           console.log("login successful");
 
-          this.init_conversation(localStorage.jid_a); // init conversation
-
-          let onNewMessageReceived = function (event) {
-            let message = event.detail.message;
-            console.log(message);
-            // let Conversation = event.detail.conversation;
-            console.log(message["data"]);
-            var msgs_t = JSON.parse(localStorage.msgs);
-            msgs_t.push({
-              from: "agent",
-              me: false,
-              content: message["data"],
-            });
-            localStorage.msgs = JSON.stringify(msgs_t);
-            // Do something with the new message received
-          };
+          init_conversation(localStorage.jid_a); // init conversation
         })
         .catch(function (err) {
           console.log("login error");
@@ -504,6 +482,7 @@ var ChatRoom = Vue.extend({
     //   setTimeout(this.get_msg, 1);
     // }, 3000);
 
+    // reroute
     this.timer3 = setInterval(() => {
       setTimeout(() => {
         axios
@@ -511,20 +490,23 @@ var ChatRoom = Vue.extend({
           jid_c: localStorage.jid_c,
         })
         .then((res) => {
+          console.log("reroute", res);
           if (res.data.agentAvailable == true) {
             // sometimes need res.body.field
             localStorage.jid_c = res.data.jid_c;
             localStorage.jid_a = res.data.jid_a;
             // this.$router.push("chatroom");
-            localStorage.removeItem("msgs");
-            this.init_conversation(localStorage.jid_a);
+            // localStorage.msgs = JSON.stringify({});
+            rainbowSDK.conversations.closeConversation(Conversation); // close current conversation
+            init_conversation();
           } else {
             // do nothing
-            console.log("Still no agent available");
+            console.log("Still no agent available from loop");
           }
         });
       }, 0);
-    }, 5);
+    }, 5000);
+
     let _this = this;
     window.onbeforeunload = function (e) {
       if (_this.$route.fullPath == "/chatroom") {
