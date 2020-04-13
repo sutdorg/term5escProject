@@ -63,17 +63,25 @@ class DB {
         let agentDetails = await this.database.query("SELECT * FROM Agent_Table");
         let earliestTime = null;
         let agentChosen = null;
+        let leastNumOfCus = null;
         for (let i = 0; i < agentDetails.length; i++) {
             if (agentDetails[i].Skill1 === cushead || agentDetails[i].Skill2 === cushead || agentDetails[i].Skill3 === cushead) {
                 console.log(LOG_ID + "status " + agentDetails[i].AvailStatus);
                 if (agentDetails[i].AvailStatus === 'Available') {
                     //console.log(agentDetails[i].Name + " connect to Customer " + cus.FirstName);
-                    if (earliestTime == null) {
+                    if (leastNumOfCus == null) {
+                        leastNumOfCus = agentDetails[i].NumOfCus;
                         earliestTime = agentDetails[i].TimeAvail;
                         agentChosen = i;
-                    } else if (earliestTime > agentDetails[i].TimeAvail) {
+                    } else if (leastNumOfCus > agentDetails[i].NumOfCus) {
+                        leastNumOfCus = agentDetails[i].NumOfCus;
                         earliestTime = agentDetails[i].TimeAvail;
                         agentChosen = i;
+                    } else if (leastNumOfCus === agentDetails[i].NumOfCus) {
+                        if (earliestTime > agentDetails[i].TimeAvail) {
+                            earliestTime = agentDetails[i].TimeAvail;
+                            agentChosen = i;
+                        }
                     }
                 } else {
                     console.log(LOG_ID + agentDetails[i].AgentID + ' is not available right now');
@@ -105,7 +113,8 @@ class DB {
             console.log(LOG_ID + 'update agent status success');
             //there is an issue here if the number is not ordered properly better to query for the jid_a and use it as the identifier instead
             console.log(LOG_ID + chosen_jid);
-            await this.database.query(ongoingcall,[chosen_jid,cus.jid_c]);
+            console.log(LOG_ID + cus.jid_c);
+            await this.database.query(ongoingcall, [0, chosen_jid, cus.jid_c]);
             return Promise.resolve({"jid_a": chosen_jid, "jid_c": cus.jid_c, "agentAvailable": true});
         }
 
@@ -155,7 +164,7 @@ class DB {
         let cusChosen = null;
 
         for (let i = 0; i < cusChosenList.length; i++) {
-            if (cusChosenList[i] != "" && cusChosenList[i] != null) {
+            if (cusChosenList[i] !== "" && cusChosenList[i] != null) {
                 console.log(LOG_ID + "entered non null" + i);
                 if (mintime == null || (cusChosenList[i][0].TimeRegistered < mintime)) {
                     console.log(LOG_ID + "enter if statement");
@@ -181,6 +190,7 @@ class DB {
 
         try {
             await this.database.query(sql, [ag.jid_a, "Online"]);
+            await this.database.query("DELETE FROM OngoingCalls WHERE jid_c =?", [ag.jid_c]);
             const allskill = await this.database.query('SELECT * FROM Skills');
             console.log(LOG_ID + "forming sklist");
             for (let i = 0; i < allskill.length; i++) {
@@ -253,7 +263,7 @@ class DB {
             resFE.send({"jid_a": rows[0].jid_a, "jid_c": rows[0].jid_c, "agentAvailable": true});
             await this.database.query("DELETE FROM UpcomingCall WHERE idUpcomingCall= ?", [rows[0].idUpcomingCall]);
             console.log(LOG_ID + 'successful Deletion of id\n');
-            await this.database.query(ongoingcall,[0,rows[0].jid_a,rows[0].jid_c]);
+            await this.database.query(ongoingcall, [0, rows[0].jid_a, rows[0].jid_c]);
             console.log("added entry to Ongoing");
         } else {
             resFE.send({"agentAvailable": false});
@@ -273,13 +283,8 @@ class DB {
         };
         console.log(LOG_ID + rows);
         console.log(LOG_ID + 'successful query for the AgentTable\n');
-        if (rows !== null && rows[0].NumOfCus === 0) {
-            await this.database.query(sql, [bodyoffline.jid_a, bodyoffline.NumOfCus, bodyoffline.AvailStatus]);
-            console.log(LOG_ID + "Agent has been set to Offline, Available to leave now");
-        } else {
-            // TODO: Disconnect customer and redirect to another agent?
-            console.log(LOG_ID + "cannot go offline you still have customers");
-        }
+        await this.database.query(sql, [bodyoffline.jid_a, bodyoffline.NumOfCus, bodyoffline.AvailStatus]);
+        console.log(LOG_ID + "Agent has been set to Offline, Available to leave now");
     }
 
     offlinetoOnline(agentDetails) {
@@ -327,12 +332,13 @@ class DB {
         let sql = "SET @jid_a = ?;SET @AvailStatus = ?; \
                    CALL EDITAGENTAVAILENTRY(@jid_a,@AvailStatus);";
         try {
-            await this.database.query(sql, [ag.jid_a, ag.jid_c]);
+            console.log(LOG_ID + "agent is now lookign for customer");
             const allskill = await this.database.query('SELECT * FROM Skills');
             for (let i = 0; i < allskill.length; i++) {
                 sklist[i] = allskill[i].Skill;
             }
             const agentEntry = await this.database.query("SELECT * FROM Agent_Table WHERE jid_a=?", [ag.jid_a]);
+            console.log(LOG_ID + "this is the value from the agent table");
             console.log(LOG_ID + agentEntry);
             for (let i = 0; i < sklist.length; i++) {
                 if (agentEntry[0].Skill1 === sklist[i] || agentEntry[0].Skill2 === sklist[i] || agentEntry[0].Skill3 === sklist[i]) {
@@ -341,55 +347,62 @@ class DB {
                 }
             }
             let z;
-            for (z = 0; z < 3; z++) {
-                const minfromq1 = await this.database.query("SELECT MIN(CustomerID) FROM Q1");
-                const mincusfromq1 = await this.database.query("SELECT * FROM Q1 WHERE CustomerID =?", [minfromq1[0]["MIN(CustomerID)"]]);
-                TopCusList.push(mincusfromq1);
-                let minfromq2 = await this.database.query("SELECT MIN(CustomerID) FROM Q2");
-                let mincusfromq2 = await this.database.query("SELECT * FROM Q2 WHERE CustomerID =?", [minfromq2[0]["MIN(CustomerID)"]]);
-                if (mincusfromq2 !== "") {
-                    TopCusList.push(mincusfromq2);
-                }
-                let minfromq3 = await this.database.query("SELECT MIN(CustomerID) FROM Q3");
-                let mincusfromq3 = await this.database.query("SELECT * FROM Q3 WHERE CustomerID =?", [minfromq3[0]["MIN(CustomerID)"]]);
-                if (mincusfromq3 !== "") {
-                    console.log(LOG_ID + mincusfromq3);
-                    TopCusList.push(mincusfromq3);
-                }
-                console.log(LOG_ID + "adding only the queues with the correct skills");
-                for (let j = 0; j < cuslist.length; j++) {
-                    chosenCusList.push(TopCusList[cuslist[j]]);
-                }
-                console.log(LOG_ID + "chosenCusList", chosenCusList);
-                let ans = this.chooseCustomer(chosenCusList);
-                if (ans == null) {
-                    console.log(LOG_ID + "no customers avail for the agent");
-                    break;
-                }
-                let anstosend = ans[0];
-                let infotosend = {
-                    "jid_a": ag.jid_a,
-                    "jid_c": anstosend.JID_IM,
-                    "agentAvailable": true
-                };
-                console.log(LOG_ID + infotosend);
-                let chosenjid = infotosend.jid_c;
-                if (chosenjid != null) {
-                    await this.database.query(cusagent, [0, infotosend.jid_a, chosenjid]);
-                }
-                await this.database.query("DELETE FROM Q1 WHERE JID_IM =?", [chosenjid]);
-                console.log(LOG_ID + "sent and del from Q1");
+            console.log("this is the number of customers");
+            console.log(agentEntry[0].NumOfCus);
+            console.log(typeof (agentEntry[0].NumOfCus));
+            if (agentEntry[0].NumOfCus === 0 || agentEntry[0].NumOfCus === "0") {
+                for (z = 0; z < 3; z++) {
+                    const minfromq1 = await this.database.query("SELECT MIN(CustomerID) FROM Q1");
+                    const mincusfromq1 = await this.database.query("SELECT * FROM Q1 WHERE CustomerID =?", [minfromq1[0]["MIN(CustomerID)"]]);
+                    TopCusList.push(mincusfromq1);
+                    let minfromq2 = await this.database.query("SELECT MIN(CustomerID) FROM Q2");
+                    let mincusfromq2 = await this.database.query("SELECT * FROM Q2 WHERE CustomerID =?", [minfromq2[0]["MIN(CustomerID)"]]);
+                    if (mincusfromq2 !== "") {
+                        TopCusList.push(mincusfromq2);
+                    }
+                    let minfromq3 = await this.database.query("SELECT MIN(CustomerID) FROM Q3");
+                    let mincusfromq3 = await this.database.query("SELECT * FROM Q3 WHERE CustomerID =?", [minfromq3[0]["MIN(CustomerID)"]]);
+                    if (mincusfromq3 !== "") {
+                        console.log(LOG_ID + mincusfromq3);
+                        TopCusList.push(mincusfromq3);
+                    }
+                    console.log(LOG_ID + "adding only the queues with the correct skills");
+                    for (let j = 0; j < cuslist.length; j++) {
+                        chosenCusList.push(TopCusList[cuslist[j]]);
+                    }
+                    console.log(LOG_ID + "chosenCusList", chosenCusList);
+                    let ans = this.chooseCustomer(chosenCusList);
+                    if (ans == null) {
+                        console.log(LOG_ID + "no customers avail for the agent");
+                        break;
+                    }
+                    let anstosend = ans[0];
+                    let infotosend = {
+                        "jid_a": ag.jid_a,
+                        "jid_c": anstosend.JID_IM,
+                        "agentAvailable": true
+                    };
+                    console.log(LOG_ID + infotosend);
+                    let chosenjid = infotosend.jid_c;
+                    if (chosenjid != null) {
+                        await this.database.query(cusagent, [0, infotosend.jid_a, chosenjid]);
+                    }
+                    await this.database.query("DELETE FROM Q1 WHERE JID_IM =?", [chosenjid]);
+                    console.log(LOG_ID + "sent and del from Q1");
 
-                await this.database.query("DELETE FROM Q2 WHERE JID_IM =?", [chosenjid]);
-                console.log(LOG_ID + "sent and deleted from Q2");
+                    await this.database.query("DELETE FROM Q2 WHERE JID_IM =?", [chosenjid]);
+                    console.log(LOG_ID + "sent and deleted from Q2");
 
-                await this.database.query("DELETE FROM Q3 WHERE JID_IM =?", [chosenjid]);
-                console.log(LOG_ID + "sent and deleted from Q3");
-                chosenCusList = [];
-                TopCusList = [];
-                console.log(z + " Customers have been scheduled");
+                    await this.database.query("DELETE FROM Q3 WHERE JID_IM =?", [chosenjid]);
+                    console.log(LOG_ID + "sent and deleted from Q3");
+                    chosenCusList = [];
+                    TopCusList = [];
+                    console.log(z + " Customers have been scheduled");
+                }
+                return Promise.resolve(z);
+            } else {
+                return Promise.resolve(0);
             }
-            return Promise.resolve(z);
         } catch (err) {
             console.log(LOG_ID + err);
         }
@@ -448,10 +461,19 @@ class DB {
         console.log(LOG_ID + bodyag.NumOfCus);
         await this.database.query(sql, [bodyag.jid_a, bodyag.NumOfCus, bodyag.AvailStatus]);
     }
-    async pullCalllog(body){
-    let agentcus = await this.database.query("SELECT * FROM OngoingCalls WHERE jid_a = ?",[body.jid_a]);
-    return Promise.resolve(agentcus);
+
+    async pullCalllog(jid_a) {
+        let agentcus = await this.database.query("SELECT * FROM OngoingCalls WHERE jid_a = ?", [jid_a]);
+        return Promise.resolve(agentcus);
+    }
+
+    async waitingEndCall(body) {
+        await this.database.entry("DELETE FROM Q1 WHERE jid_c = ?", [body.jid_c]);
+        await this.database.entry("DELETE FROM Q2 WHERE jid_c = ?", [body.jid_c]);
+        await this.database.entry("DELETE FROM Q3 WHERE jid_c = ?", [body.jid_c]);
+        return Promise.resolve("Customer with jid_c" + body.jid_c + " has been removed from the queues");
     }
 }
+
 
 module.exports = new DB();

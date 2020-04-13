@@ -21,27 +21,56 @@ class BE {
 
             app.use(express.json());
 
+            /**
+             * Receives guest creation request, forwards to SDK to handle
+             * @param {string} req.body.first_name       Customer's first name
+             * @param {string} req.body.last_name        Customer's last name
+             * @param {string} req.body.phone_number     Customer's phone number
+             * @param {string} req.body.skill            Customer's requested skill
+             */
             app.post('/createguest', function (req, res) {
                 console.log(LOG_ID + "/createguest called");
-                sdk.createGuest(req.body, res);
+                sdk.createGuest(req.body).then((msg) => {
+                    res.send(msg);
+                });
             });
 
+            /**
+             * Receives end chat request, forwards to SDK to handle
+             * @param {string} req.body.jid_c            Customer's IM id
+             * @param {string} req.body.jid_a            Agent's IM id
+             */
             app.post('/endcall', function (req, res) {
                 console.log(LOG_ID + "/endcall called");
-                sdk.endCall(req.body.jid_a, req.body.id_c, req.body.jid_c, res);
+                sdk.endCall(req.body).then((msg) => {
+                    res.send(msg);
+                });
             });
 
-            // TODO: Cancel call when tab is closed before agent is connected
-            /*app.post('/cancelcall', function (req, res) {
-                //logger.log("debug", LOG_ID + "/cancelcall called");
-                sdk.cancelCall(req.body);
-            });*/
+            /**
+             * Receives cancel chat request, forwards to SDK to handle
+             * @param {string} req.body.jid_c            Customer's IM id
+             */
+            app.post('/cancelcall', function (req, res) {
+                console.log("debug", LOG_ID + "/cancelcall called");
+                sdk.cancelCall(req.body).then((msg) => {
+                    res.send(msg);
+                });
+            });
 
+            /**
+             * Receives queue update request, forwards to DB to handle
+             * @param {string} req.body.jid_c            Customer's IM id
+             */
             app.post('/cusagent', function (req, res) {
                 console.log(LOG_ID + "/cusagent called");
                 db.waiting(req.body, res);
             });
 
+            /**
+             * Receives customer to agent connection success update, forwards to DB to handle
+             * @param {string} req.body.jid_a            Agent's IM id
+             */
             app.post('/update/cSuccess', function (req, res) {
                 console.log(LOG_ID + "/update/cSuccess called");
                 db.updateAgent(req.body, res);
