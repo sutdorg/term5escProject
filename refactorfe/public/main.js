@@ -292,6 +292,82 @@ var ChatRoom = Vue.extend({
     get_msg() {
       console.log("i am retrieving message, timestamp:" + new Date().getTime());
     },
+
+    init_conversation(contactJID) {
+      // var contactJID = localStorage.jid_a; // agent JID
+      console.log("This agent JID is " + contactJID);
+      var selectedContact = null;
+      /* Handler called when user clicks on a contact */
+      var onContactSelected = function (contactId) {
+        selectedContact = rainbowSDK.contacts.getContactByJID(contactId);
+      };
+      console.log("Print selectedContact " + selectedContact);
+      // Contact not found locally, ask to the server
+      if (selectedContact == undefined || selectedContact == null) {
+        rainbowSDK.contacts
+          .searchByJid(contactJID)
+          .then((contact_t) => {
+            selectedContact = contact_t;
+            console.log(selectedContact);
+
+            // console.log(selectedContact)
+            if (selectedContact) {
+              // Ok, we have the contact object
+              console.log("if loop");
+              rainbowSDK.conversations
+                .openConversationForContact(selectedContact)
+                .then(function (conversation) {
+                  console.log("test");
+                  console.log(conversation);
+                  localStorage.setItem("Conversation", conversation);
+                  Conversation = conversation;
+
+                  console.log("Conversation estabished");
+                  console.log(Conversation);
+                  // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users4
+
+                  rainbowSDK.im.sendMessageToConversation(
+                    conversation,
+                    "New customer!"
+                  );
+                  console.log("First message sent!");
+                  // should send to backend that conversation is established
+
+                  // send to Ryan saying chat is started
+                  // var temp_json = {};
+                  // temp_json["jid_a"] = localStorage.jid_a;
+                  // // Ryan IP
+                  // axios
+                  //   .post(
+                  //     api_addr + "update/cSuccess",
+                  //     temp_json
+                  //   )
+                  //   .then(function (res) {
+                  //     console.log(res);
+                  //   });
+                  document.addEventListener(
+                    rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+                    onNewMessageReceived
+                  );
+                })
+                .catch(function (err) {
+                  console.log(
+                    "Fail to create a conversation using contact: " +
+                      contact_t
+                  );
+                  console.log(err);
+                });
+            } else {
+              // Strange, no contact with that Id. Are you sure that the id is correct?
+            }
+          })
+          .catch(function (err) {
+            //Something when wrong with the server. Handle the trouble here
+            console.log(err);
+          });
+      }
+    },
+
     onNewMessageReceived(event) {
       // let message = event.detail.message;
       this.conversation_i = event.detail.conversation;
@@ -301,7 +377,6 @@ var ChatRoom = Vue.extend({
         console.log(res);
         // console.log()
       });
-
       // new messages should be pushed to msgs
       // this.msgs.push();
     },
@@ -329,7 +404,7 @@ var ChatRoom = Vue.extend({
     //     });
     // }, 1);
 
-    this.timer6 = setTimeout(() => {
+    this.timer0 = setTimeout(() => {
       if (localStorage.msgs != undefined) {
         // if localStorage got something,
         // just break it out
@@ -352,7 +427,7 @@ var ChatRoom = Vue.extend({
     // sync msgs with localStorage.msgs
     // all msgs wil be added to localStorage.msgs
     // then assign value in localStorage.msgs to this.msgs
-    this.timer5 = setInterval(() => {
+    this.timer1 = setInterval(() => {
       setTimeout(() => {
         this.msgs = JSON.parse(localStorage.msgs);
       }, 1);
@@ -375,7 +450,7 @@ var ChatRoom = Vue.extend({
     // }, 10);
 
     // run after 5 senconds only once
-    this.timer3 = setTimeout(() => {
+    this.timer2 = setTimeout(() => {
       // get Contact object using JID in localStorage
       // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/contacts#module_Contacts+getContactById
 
@@ -395,89 +470,8 @@ var ChatRoom = Vue.extend({
         .signin(myRainbowLogin, myRainbowPassword)
         .then(function (account) {
           console.log("login successful");
-          // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
-          // localStorage.JID = "5e7c74ba35c8367f99b90644"; // guest
-          // localStorage.JID =
-          //   "d6aabfd1a348467a990f0dfcb94b5218@sandbox-all-in-one-rbx-prod-1.rainbow.sbg"; // agent
 
-          var contactJID = localStorage.jid_a; // agent JID
-          console.log("This agent JID " + contactJID);
-
-          var selectedContact = null;
-
-          /* Handler called when user clicks on a contact */
-          var onContactSelected = function (contactId) {
-            selectedContact = rainbowSDK.contacts.getContactByJID(contactId);
-          };
-
-          console.log("Print selectedContact " + selectedContact);
-
-          // Contact not found locally, ask to the server
-          if (selectedContact == undefined || selectedContact == null) {
-            rainbowSDK.contacts
-              .searchByJid(contactJID)
-              .then((contact_t) => {
-                selectedContact = contact_t;
-                console.log(selectedContact);
-
-                // console.log(selectedContact)
-                if (selectedContact) {
-                  // Ok, we have the contact object
-                  console.log("if loop");
-                  rainbowSDK.conversations
-                    .openConversationForContact(selectedContact)
-                    .then(function (conversation) {
-                      console.log("test");
-                      console.log(conversation);
-                      localStorage.setItem("Conversation", conversation);
-                      Conversation = conversation;
-
-                      console.log("Conversation estabished");
-                      console.log(Conversation);
-                      // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users4
-
-                      rainbowSDK.im.sendMessageToConversation(
-                        conversation,
-                        "New customer!"
-                      );
-                      console.log("First message sent!");
-                      // should send to backend that conversation is established
-
-                      // send to Ryan saying chat is started
-                      // var temp_json = {};
-                      // temp_json["jid_a"] = localStorage.jid_a;
-                      // // Ryan IP
-                      // axios
-                      //   .post(
-                      //     api_addr + "update/cSuccess",
-                      //     temp_json
-                      //   )
-                      //   .then(function (res) {
-                      //     console.log(res);
-                      //   });
-                      document.addEventListener(
-                        rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
-                        onNewMessageReceived
-                      );
-                    })
-                    .catch(function (err) {
-                      console.log(
-                        "Fail to create a conversation using contact: " +
-                          contact_t
-                      );
-                      console.log(err);
-                    });
-                } else {
-                  // Strange, no contact with that Id. Are you sure that the id is correct?
-                }
-              })
-              .catch(function (err) {
-                //Something when wrong with the server. Handle the trouble here
-                console.log(err);
-              });
-          }
-          // console.log("selectedContact");
-          // console.log(selectedContact);
+          this.init_conversation(localStorage.jid_a); // init conversation
 
           let onNewMessageReceived = function (event) {
             let message = event.detail.message;
@@ -502,31 +496,6 @@ var ChatRoom = Vue.extend({
     }, 5000);
     // console.log(this.contact_i);
 
-    // // console.log(this.contact_i.JSON());
-    // if (this.contact_i != null) {
-    //   // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/conversations#module_Conversations+getConversationById
-
-    //   rainbowSDK.conversations
-    //     .openConversationForContact(this.contact_i)
-    //     .then(function(promise) {
-    //       if (promise != null) {
-    //         this.conversation_i = promise;
-    //         console.log("Conversation estabished");
-    //         // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users
-    //         document.addEventListener(
-    //           rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
-    //           this.onNewMessageReceived
-    //         );
-    //       } else {
-    //         console.log(
-    //           "Fail to create a conversation using contact: " + this.contact_i
-    //         );
-    //       }
-    //     });
-    // } else {
-    //   console.log("No contact found using JID: " + localStorage.JID);
-    // }
-
     // we have a new message listener
     // we do not need this part, maybe
     // check for new messages every 3 seconds
@@ -534,6 +503,28 @@ var ChatRoom = Vue.extend({
     // this.timer1 = setInterval(() => {
     //   setTimeout(this.get_msg, 1);
     // }, 3000);
+
+    this.timer3 = setInterval(() => {
+      setTimeout(() => {
+        axios
+        .post(api_addr + "cusagent", {
+          jid_c: localStorage.jid_c,
+        })
+        .then((res) => {
+          if (res.data.agentAvailable == true) {
+            // sometimes need res.body.field
+            localStorage.jid_c = res.data.jid_c;
+            localStorage.jid_a = res.data.jid_a;
+            // this.$router.push("chatroom");
+            localStorage.removeItem("msgs");
+            this.init_conversation(localStorage.jid_a);
+          } else {
+            // do nothing
+            console.log("Still no agent available");
+          }
+        });
+      }, 0);
+    }, 5);
     let _this = this;
     window.onbeforeunload = function (e) {
       if (_this.$route.fullPath == "/chatroom") {
@@ -562,10 +553,13 @@ var ChatRoom = Vue.extend({
       }
     };
   },
+
   beforeDestroy() {
     clearInterval(this.timer0);
     clearInterval(this.timer1);
     clearInterval(this.timer2);
+    clearInterval(this.timer3);
+
   },
 });
 
