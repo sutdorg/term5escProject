@@ -16,8 +16,9 @@ class SDK {
         return new Promise((resolve) => {
             this.nodeSDK = new NodeSDK(config);
 
+            // event handler for contact presence change
             this.nodeSDK.events.on("rainbow_oncontactpresencechanged", (contact) => {
-                console.log(LOG_ID + "Presence Changed");
+                console.log(LOG_ID + "Presence change detected");
                 console.log(LOG_ID + contact.displayName + " presence changed to " + contact.presence);
                 let agentDetails = {
                     "jid_a": contact.jid_im,
@@ -30,6 +31,17 @@ class SDK {
                 }
             });
 
+            // event handler when server receives messages
+            this.nodeSDK.events.on("rainbow_onmessagereceived", (message) => {
+                console.log(LOG_ID + "message received");
+                if (!message.fromJid.includes(this.nodeSDK.connectedUser.jid_im)) {
+                    if (message.type === "chat" && message.content.startsWith("!")) {
+                        this.processCommand(message);
+                    }
+                }
+            });
+
+            // event handler for rainbow ready
             this.nodeSDK.events.on("rainbow_onready", () => {
                 console.log(LOG_ID + "rainbow started");
                 this.initAgents().then(() => {
@@ -41,176 +53,207 @@ class SDK {
         });
     }
 
-    createGuest(req, resFE) {
-        console.log(LOG_ID + "Creating guest...");
-        this.nodeSDK.admin.createGuestUser(req.first_name, req.last_name, "en-US", 86400).then((guest) => {
-            console.log(LOG_ID + "Guest Created, updating database...");
-            let guestDetails = {
-                "CustomerID": 0,
-                "FirstName": guest.firstName,
-                "LastName": guest.lastName,
-                "StrID": guest.id,
-                "jid_c": guest.jid_im,
-                "Skill": req.skill
-            };
-            db.queueingReq(guestDetails)
-                .then(result => {
-                    console.log(LOG_ID + "Database updated, responding to fronted...");
-                    let a = {
-                        "agentAvailable": result.agentAvailable,
-                        "jid_c": guest.jid_im,
-                        "jid_a": result.jid_a,
-                        "guest_login": guest.loginEmail,
-                        "guest_password": guest.password,
-                        "id_c": guest.id
-                    };
-                    resFE.send(a);
-                    console.log(LOG_ID + "Responded to frontend");
-                })
-                .catch(error => {
-                    resFE.send("error");
-                    console.log(LOG_ID + error);
-                });
-        }).catch((err) => {
-            resFE.send("error");
-            console.log(LOG_ID + "guest creation fail");
-            console.log(LOG_ID + err);
-        });
-    }
-
+    /**
+     * Initialize agents method: Called once on server startup to
+     * 1) Add agents to database
+     * 2) Add all users in company into contact list of admin
+     * 3) Initiate first contact of bot with agent
+     * @returns {Promise<void>}
+     */
     async initAgents() {
-        let contacts = this.nodeSDK.contacts.getAll();                                              // get current list of contacts
-        let arrayUsers = await this.nodeSDK.admin.getAllUsers("small");                             // get all users in company
-        let count = 0;
-        return new Promise((resolve) => {
-            console.log(LOG_ID + "Initializing agents...");
-            arrayUsers.forEach((user) => {                                                       // loop through all users in company
-                this.nodeSDK.contacts.getContactById(user.id, true).then((contact) => {         // get contact object from user.id
-                    if (!(contact.roles.includes("admin") || contact.roles.includes("guest"))) {    // ignore if contact is admin or guest
-                        if (!contacts.includes(contact)) {
-                            this.nodeSDK.contacts.addToContactsList(contact).then(() => {           // if contact is not in list of contacts, add to list
-                                this.sendAgent(contact).then(() => {                                // send agent detail to database
-                                    count++;
-                                    if (count === arrayUsers.length) {
-                                        resolve();                                                  // resolve only after last iteration
-                                    }
-                                });
-                            });
-                        } else {
-                            this.sendAgent(contact).then(() => {                                    // if contact is in list of contacts, send agent
-                                count++;
-                                if (count === arrayUsers.length) {
-                                    resolve();                                                      // resolve only after last iteration
-                                }
-                            });
-                        }
-                    } else {
-                        count++;
-                        if (count === arrayUsers.length) {
-                            resolve();                                                              // resolve only after last iteration
-                        }
-                    }
-                });
-            });
-        });
-    }
-
-    sendAgent(contact) {
-        return new Promise((resolve) => {
-            console.log(LOG_ID + "Adding " + contact.displayName + " to database...");
-            let skill = [];
-            if (contact.tags !== undefined) {
-                skill = contact.tags;
-            }
-            let agentDetails = {
-                "AgentID": 0,
-                "Skill1": skill[0],
-                "Skill2": skill[1],
-                "Skill3": skill[2],
-                "Name": contact.displayName,
-                "AvailStatus": contact.presence,
-                "NumOfCus": 0,
-                "jid_a": contact.jid_im
-            };
-            db.addingAgent(agentDetails).then(() => {
-                resolve();
-            });
-        });
-    }
-
-    endCall(jid_a, id_c, jid_c, resFE) {
-        console.log(LOG_ID + "Ending call...");
-        this.nodeSDK.admin.deleteUser(id_c).then(() => {
-            let agentDetails = {"jid_a": jid_a, "jid_c": jid_c};
-            db.resolveCall(agentDetails)
-                .then(res => {
-                    console.log(LOG_ID + "User deleted");
-                    resFE.send("User deleted");
-                    console.log(LOG_ID + res);
-                })
-                .catch(error => {
+        let arrayUsers = await this.nodeSDK.admin.getAllUsers("small");
+        for (const user of arrayUsers) {
+            let contact = await this.getContactByID(user.id, true);
+            if (!(contact.roles.includes("admin") || contact.roles.includes("guest"))) {
+                await this.sendAgent(contact);
+                try {
+                    await this.nodeSDK.contacts.addToContactsList(contact);
+                    await this.nodeSDK.im.sendMessageToJid("Hello! Welcome to the company!", contact.jid_im);
+                } catch (error) {
                     console.log(LOG_ID + error);
-                });
-        }).catch((err) => {
-            resFE.send("Error");
-            console.log(LOG_ID + err);
-        });
+                }
+            }
+        }
     }
 
-    // TODO: bot for administrative purposes
-    // User: Reroute customers
-    // Admin: Add agent to database?
-
-    // TODO: cancelCall
-    // DB need to handle cancel call
-    // called when guest cancel by closing tab before agent is assigned?
-    /*cancelCall(guestDetails, resFE) {
-        // logger.log("debug", LOG_ID + "Cancelling call...");
-        this.nodeSDK.admin.deleteUser(guestDetails.id_c).then((user) => {
-            axios.post('http://10.12.66.69:1337/cancel', {
-                "id_c": id_c
-            })
-                .then(res => {
-                    // logger.log("debug", LOG_ID + res);
-                    // logger.log("debug", LOG_ID + "User deleted")
-                    resFE.send("User deleted");
-                })
-                .catch(error => {
-                    // logger.log("error", LOG_ID + error);
-                });
-        }).catch((err) => {
-            resFE.send("Error");
-            //logger.log("error", LOG_ID + err);
-        });
-    }*/
-
-
-    /*
-    restart() {
-        return new Promise((resolve, reject) => {
-            this.nodeSDK.events.once('rainbow_onstopped', (data) => {
-                //logger.log("debug", LOG_ID + "SDK - rainbow_onstopped - rainbow event received. data", data);
-                //logger.log("debug", LOG_ID + "SDK - rainbow_onstopped rainbow SDK will re start");
-                this.nodeSDK.start().then(() => {
-                    resolve();
-                });
-            });
-            this.nodeSDK.stop();
-        });
+    /**
+     * Send Agent method: Updates the database with agent details
+     * @param contact   contact object obtained from rainbow with agent details
+     * @param contact.displayName   Agent's display name
+     * @param contact.tags          Agent's skills
+     * @param contact.presence      Agent's current presence
+     * @param contact.jid_im        Agent's IM id
+     * @returns {Promise<void>}
+     */
+    async sendAgent(contact) {
+        console.log(LOG_ID + "Adding " + contact.displayName + " to database...");
+        let skill = [];
+        if (contact.tags !== undefined) {
+            skill = contact.tags;
+        }
+        let agentDetails = {
+            "AgentID": 0,
+            "Skill1": skill[0],
+            "Skill2": skill[1],
+            "Skill3": skill[2],
+            "Name": contact.displayName,
+            "AvailStatus": contact.presence,
+            "NumOfCus": 0,
+            "jid_a": contact.jid_im
+        };
+        await db.addingAgent(agentDetails);
+        console.log(LOG_ID + "Added " + contact.displayName + " to database")
     }
 
-    get state() {
-        return this.nodeSDK.state;
+    /**
+     * Guest creation method: Create guest using rainbow then forward to DB to queue guest
+     * @param               body                  contains first_name, last_name, phone_number, skill
+     * @param {string}      body.first_name       customer's first name
+     * @param {string}      body.last_name        customer's last name
+     * @param {string}      body.phone_number     customer's phone number
+     * @param {string}      body.skill            customer's requested skill
+     * @returns {Promise<{jid_a: string, agentAvailable: boolean, guest_login: string, guest_password: string, jid_c: string}>}
+     */
+    async createGuest(body) {
+        console.log(LOG_ID + "Creating guest...");
+        let guest = await this.nodeSDK.admin.createGuestUser(body.first_name, body.last_name, "en-US", 86400);
+        console.log(LOG_ID + "Guest Created, updating database...");
+        let guestDetails = {
+            "CustomerID": 0,
+            "FirstName": guest.firstName,
+            "LastName": guest.lastName,
+            "jid_c": guest.jid_im,
+            "Skill": body.skill
+        };
+        let result = await db.queueingReq(guestDetails);
+        console.log(LOG_ID + "Database updated, responding to fronted...");
+        return {
+            "agentAvailable": result.agentAvailable,
+            "jid_c": guest.jid_im,
+            "jid_a": result.jid_a,
+            "guest_login": guest.loginEmail,
+            "guest_password": guest.password
+        };
     }
 
-    get version() {
-        return this.nodeSDK.version;
+    /**
+     * End call method: Delete guest from rainbow then forward to DB to resolve call
+     * @param               body                  contains jid_c, jid_a
+     * @param {string}      body.jid_c            customer's IM id
+     * @param {string}      body.jid_a            agent's IM id
+     * @returns {Promise<string>}
+     */
+    async endCall(body) {
+        console.log(LOG_ID + "Ending call...");
+        let user = await this.getContactByJID(body.jid_c);
+        await this.nodeSDK.admin.deleteUser(user.id);
+        let msg = await db.resolveCall(body);
+        console.log(LOG_ID + msg);
+        console.log(LOG_ID + "User deleted, call ended");
+        return (msg);
     }
 
-    get sdk() {
-        return this.nodeSDK;
+    /**
+     * Cancel call method: Delete guest from rainbow then forward to DB to end waiting call
+     * @param               body                  contains jid_c
+     * @param {string}      body.jid_c            customer's IM id
+     * @returns {Promise<string>}
+     */
+    async cancelCall(body) {
+        console.log(LOG_ID + "Canceling call...");
+        let user = await this.getContactByJID(body.jid_c);
+        await this.nodeSDK.admin.deleteUser(user.id);
+        let msg = await db.waitingEndCall(body);
+        console.log(LOG_ID + msg);
+        console.log(LOG_ID + "User deleted, call cancelled");
+        return (msg);
     }
-    */
+
+    /**
+     * Process command method: To process all messages that the server receives that starts with '!'
+     * @param message
+     */
+    processCommand(message) {
+        let fullCommand = message.content.substr(1);
+        let splitCommand = fullCommand.split(" ");
+        let primaryCommand = splitCommand[0];
+        let arg = splitCommand.slice(1);
+
+        console.log(LOG_ID + "Command received: " + primaryCommand);
+        console.log(LOG_ID + "Arguments: " + arguments);
+
+        if (primaryCommand === "help") {
+            this.helpCommand(arg, message);
+        } else if (primaryCommand === "reroute") {
+            this.rerouteCommand(arg, message);
+        } else if (primaryCommand === "users") {
+            this.usersCommand(arg, message);
+        } else {
+            this.nodeSDK.im.sendMessageToJid("Invalid command, try typing !help to see available commands", message.fromJid);
+        }
+    }
+
+    /**
+     * Help command method: To handle !help command, sends list of available commands
+     * @param arg
+     * @param message
+     */
+    helpCommand(arg, message) {
+        let commandMsg = "Hello Agent!\n\n";
+        commandMsg += "Type '!users' to see list of customers you are currently connected to\n";
+        commandMsg += "Type '!reroute <Customerid> <skill>' to reroute user to another agent with the required skill";
+        this.nodeSDK.im.sendMessageToJid(commandMsg, message.fromJid);
+    }
+
+    /**
+     * Reroute command method: To handle !reroute command, routes indicated customer
+     * @param {string[]}    arg         array of arguments
+     * @param {string}      arg[0]      customer's IM id
+     * @param {string}      arg[1]      new skill to route customer to
+     * @param               message
+     */
+    rerouteCommand(arg, message) {
+        if (arg.length !== 2) {
+            this.nodeSDK.im.sendMessageToJid("Type '!reroute <Customerid> <skill>' to reroute user to another agent with the required skill", message.fromJid);
+        } else {
+            // TODO: db.reroute(arg)
+            // db.reroute(arg);
+        }
+    }
+
+    /**
+     * Users command method: To handle !users command, sends list of customers currently handled by agent
+     * @param arg
+     * @param message
+     */
+    async usersCommand(arg, message) {
+        let listOfCustomers = await db.pullCalllog(message.fromJid);
+        let msgToSend = "You currently have " + listOfCustomers.length + " customers.\n";
+        for (const customer of listOfCustomers) {
+            let contact = await this.getContactByJID(customer.jid_c);
+            msgToSend += "\n" + "Name: " + contact._displayName + "\nCustomer id: " + contact.id;
+        }
+        await this.nodeSDK.im.sendMessageToJid(msgToSend, message.fromJid);
+    }
+
+    /**
+     * Get contact Method: Uses jid to get the contact object
+     * @param {string} jid      user's jid to use for query
+     * @returns {Promise<Contact|ErrorManager>}
+     */
+    async getContactByJID(jid) {
+        return await this.nodeSDK.contacts.getContactByJid(jid);
+    }
+
+    /**
+     * Get contact Method: Uses id to get the contact object
+     * @param {string} id       user's id to use for query
+     * @returns {Promise<Contact|ErrorManager>}
+     */
+    async getContactByID(id) {
+        return await this.nodeSDK.contacts.getContactById(id);
+    }
+
 }
 
 module.exports = new SDK();
