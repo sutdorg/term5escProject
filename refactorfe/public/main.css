@@ -69,10 +69,12 @@ button.submit {
 
 img {
   width: 30px;
+  height: 20px;
   margin-top: 5px;
 }
 
 .chatroom {
+  width: 400px;
   display: block;
 }
 
@@ -90,12 +92,16 @@ img {
   padding-top: 1px;
   padding-bottom: 1px;
   padding-left: 3px;
-  padding-right: 8px;
+  padding-right: 4px;
   border-radius: 8px;
   margin-bottom: 2px;
 }
 
-.agent_logo {
+button.reroute_button {
+  float: right;
+}
+
+/* .agent_logo {
   background: url("../assets/agent_logo.png") center;
   background-size: cover;
   display: flex;
@@ -106,7 +112,7 @@ img {
   margin-top: 4px;
   background: url("../assets/guest_logo.png") center;
   background-size: cover;
-}
+} */
 
 .guest_msg {
   border: 1px solid rgb(224, 250, 193);
@@ -137,7 +143,7 @@ img {
 
 .chat-input textarea {
   margin-top: 10px;
-  width: 320px;
+  width: 319px;
 }
 
 .chat-input button {
@@ -275,3 +281,12 @@ img {
 }
 
 /* End of Waiting progress animation * /
+
+/* rerouting */
+.retoute_screen {
+  width: 350px;
+}
+
+.retoute_screen select {
+  width: auto;
+}

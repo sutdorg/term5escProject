@@ -89,7 +89,7 @@ var FillForm = Vue.extend({
   </select>
   <br />
 
-  <button class="submit" v-on:click="submit()" type="submit">Start Chatting</button>
+  <button class="submit" :disabled="submit_disabled" v-on:click="submit()" type="submit">Start Chatting</button>
 </div>`,
   data() {
     return {
@@ -97,6 +97,7 @@ var FillForm = Vue.extend({
       first_name: "",
       last_name: "",
       phone_number: "",
+      submit_disabled: false,
       selected_skill: "",
       post_url: api_addr + "createguest",
     };
@@ -119,7 +120,7 @@ var FillForm = Vue.extend({
         alert("Please enter a valid phone number.");
         return;
       }
-
+      this.submit_disabled  = true;
       //   console.log(this.first_name)
       //   console.log(this.select_skill)
       // and store data in localStorage
@@ -185,6 +186,7 @@ var ChatRoom = Vue.extend({
   template: `  <div class="chatroom">
   <div class="chat-header">
     <button class="end_chat_button" v-on:click="endChat()">End Chat</button>
+    <button class="reroute_button" v-on:click="reroute()">Reroute</button>
   </div>
   <div class="chat-body">
     <!-- <div class="agent_chat" v-for="item of agent_msgs" v-bind:key="item.id">
@@ -200,11 +202,11 @@ var ChatRoom = Vue.extend({
     <div class="single" v-for="item of msgs" v-bind:key="item.id">
       <div :class="[item.from + '_chat']" v-if="item.me">
         <span :class="[item.from + '_msg']">{{item.content}}</span>
-        <img :class="[item.from + '_logo']" src=""/>
+        <img :class="[item.from + '_logo']" :src="'https://escproject.sutd.org/assets/' + [item.from + '_logo.png']"/>
         <br />
       </div>
       <div :class="[item.from + '_chat']" v-else>
-        <img :class="[item.from + '_logo']" src=""/>
+        <img :class="[item.from + '_logo']" :src="'https://escproject.sutd.org/assets/' + [item.from + '_logo.png']"/>
         <span :class="[item.from + '_msg']">{{item.content}}</span>
         <br />
       </div>
@@ -252,6 +254,9 @@ var ChatRoom = Vue.extend({
       // localStorage.removeItem(phone_number);
       // localStorage.removeItem(selected_skill);
       // remove whole localStorage
+    },
+    reroute() {
+      this.$router.push("rerouting");
     },
     send() {
       if (this.inputContent === "") {
@@ -529,13 +534,6 @@ var ChatRoom = Vue.extend({
     // this.timer1 = setInterval(() => {
     //   setTimeout(this.get_msg, 1);
     // }, 3000);
-  },
-  beforeDestroy() {
-    clearInterval(this.timer0);
-    clearInterval(this.timer1);
-    clearInterval(this.timer2);
-  },
-  mounted() {
     let _this = this;
     window.onbeforeunload = function (e) {
       if (_this.$route.fullPath == "/chatroom") {
@@ -563,6 +561,11 @@ var ChatRoom = Vue.extend({
         window.onbeforeunload = null;
       }
     };
+  },
+  beforeDestroy() {
+    clearInterval(this.timer0);
+    clearInterval(this.timer1);
+    clearInterval(this.timer2);
   },
 });
 
@@ -635,7 +638,55 @@ var Waiting = Vue.extend({
 });
 
 var Rerouting = Vue.extend({
-  template: `<div class="retoute_screen>>We are rerouting you. Please hold on.</div>`,
+  template: `<div class="retoute_screen">Which department do you want to go to?
+  <br /><br />
+  <select v-model="selected_skill">
+  <option disabled value="">Please choose what you want to consult</option>
+  <option>Tablet</option>
+  <option>Phone</option>
+  <option>Computer</option>
+  </select>
+  <br />
+  <div class="rerouting_msg"> {{rerouting_msg}} </div>
+  <button class="submit" :disabled="button_disable" v-on:click="submit()" type="submit">Start rerouting</button></div>`,
+  data() {
+    return {
+      selected_skill: "",
+      rerouting_msg: "",
+      button_disable: false,
+    };
+  },
+  methods: {
+    submit() {
+      if (this.selected_skill == "") {
+        alert("Please select one department.");
+        return;
+      }
+      localStorage.selected_skill = this.selected_skill;
+      console.log(localStorage.selected_skill);
+      this.rerouting_msg =
+        "We are reouting you to " +
+        this.selected_skill +
+        " department, please hold on.";
+      this.button_disable = true;
+      // do some requests here
+      var post_url = api_addr + "reroute";
+      var rerouting_json = {};
+      rerouting_json["jid_c"] = localStorage.jid_c;
+      rerouting_json["skill"] = localStorage.selected_skill;
+      axios
+        .post(post_url, rerouting_json, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+        .then((response) => {
+          localStorage.jid_a = response.data.jid_a;
+          localStorage.removeItem("msgs");
+          this.$router.push("chatroom");
+        });
+    },
+  },
 });
 
 const routes = [
