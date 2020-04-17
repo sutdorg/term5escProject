@@ -308,6 +308,25 @@ var ChatRoom = Vue.extend({
   },
 
   mounted() {
+    let onNewMessageReceived = function (event) {
+      let message = event.detail.message;
+      console.log(message);
+      // let Conversation = event.detail.conversation;
+      console.log(message["data"]);
+      var msgs_t = JSON.parse(localStorage.msgs);
+      msgs_t.push({
+        from: "agent",
+        me: false,
+        content: message["data"],
+      });
+      localStorage.msgs = JSON.stringify(msgs_t);
+      // Do something with the new message received
+    };
+    document.addEventListener(
+      rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
+      onNewMessageReceived
+    );
+
     let init_conversation = function() {
       var contactJID = localStorage.jid_a; // agent JID
       console.log("This agent JID is " + contactJID);
@@ -360,24 +379,6 @@ var ChatRoom = Vue.extend({
                   //   .then(function (res) {
                   //     console.log(res);
                   //   });
-                  let onNewMessageReceived = function (event) {
-                    let message = event.detail.message;
-                    console.log(message);
-                    // let Conversation = event.detail.conversation;
-                    console.log(message["data"]);
-                    var msgs_t = JSON.parse(localStorage.msgs);
-                    msgs_t.push({
-                      from: "agent",
-                      me: false,
-                      content: message["data"],
-                    });
-                    localStorage.msgs = JSON.stringify(msgs_t);
-                    // Do something with the new message received
-                  };
-                  document.addEventListener(
-                    rainbowSDK.im.RAINBOW_ONNEWIMMESSAGERECEIVED,
-                    onNewMessageReceived
-                  );
                 })
                 .catch(function (err) {
                   console.log(
@@ -595,13 +596,13 @@ var Waiting = Vue.extend({
         // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
         this.console.log("customer closes waiting, sending cancelcall");
 
-        // axios
-        //   .post(api_addr + "cancelcall", {
-        //     jid_c: localStorage.jid_c, // TODO:
-        //   })
-        //   .then((res) => {
-        //     // do nothing
-        //   });
+        axios
+          .post(api_addr + "cancelcall", {
+            jid_c: localStorage.jid_c, // TODO:
+          })
+          .then((res) => {
+            // do nothing
+          });
         return "";
       } else {
         window.onbeforeunload = null;
