@@ -11,11 +11,17 @@ const LOG_ID = "BE - ";
 class BE {
 
     constructor() {
-        this.port = process.env.PORT || 3000;
+        this.port = null;
     }
 
-    start() {
+    /**
+     *
+     * @param port
+     * @returns {Promise<>}
+     */
+    start(port) {
         return new Promise((resolve) => {
+            this.port = port;
             let app = express();
             app.use(cors());
 
@@ -65,15 +71,6 @@ class BE {
             app.post('/cusagent', function (req, res) {
                 console.log(LOG_ID + "/cusagent called");
                 db.waiting(req.body, res);
-            });
-
-            /**
-             * Receives customer to agent connection success update, forwards to DB to handle
-             * @param {string} req.body.jid_a            Agent's IM id
-             */
-            app.post('/update/cSuccess', function (req, res) {
-                console.log(LOG_ID + "/update/cSuccess called");
-                db.updateAgent(req.body, res);
             });
 
             app.listen(this.port, () => {
