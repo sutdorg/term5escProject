@@ -12,6 +12,18 @@ class SDK {
         this.nodeSDK = null;
     }
 
+    /**
+     * Starts the sdk module, initialize and start rainbow
+     * - Create event handlers for
+     *      - Contact presence change
+     *          - To alert DB on agent on status change
+     *      - Message receive
+     *          - For bot
+     *      - Rainbow ready
+     *          - To do initialization
+     * @param config        Config file for rainbow node sdk
+     * @returns {Promise}   Returns after rainbow node sdk has started and agents have initialized
+     */
     start(config) {
         return new Promise((resolve) => {
             this.nodeSDK = new NodeSDK(config);
@@ -49,21 +61,21 @@ class SDK {
                 });
             });
 
-            this.nodeSDK.start();
+            this.nodeSDK.start(LOG_ID);
         });
     }
 
     /**
      * Initialize agents method: Called once on server startup to
-     * 1) Add agents to database
-     * 2) Add all users in company into contact list of admin
-     * 3) Initiate first contact of bot with agent
+     * - Add agents to database
+     * - Add all users in company into contact list of admin
+     * - Initiate first contact of bot with agent
      * @returns {Promise<void>}
      */
     async initAgents() {
         let arrayUsers = await this.nodeSDK.admin.getAllUsers("small");
         for (const user of arrayUsers) {
-            let contact = await this.getContactByID(user.id, true);
+            let contact = await this.getContactByID(user.id);
             if (!(contact.roles.includes("admin") || contact.roles.includes("guest"))) {
                 await this.sendAgent(contact);
                 try {
@@ -78,12 +90,11 @@ class SDK {
 
     /**
      * Send Agent method: Updates the database with agent details
-     * @param contact   contact object obtained from rainbow with agent details
-     * @param contact.displayName   Agent's display name
-     * @param contact.tags          Agent's skills
-     * @param contact.presence      Agent's current presence
-     * @param contact.jid_im        Agent's IM id
-     * @returns {Promise<void>}
+     * @param {Contact}     contact               contact object obtained from rainbow with agent details
+     * @param {string}      contact.displayName   Agent's display name
+     * @param {string[]}    contact.tags          Agent's skills
+     * @param {string}      contact.presence      Agent's current presence
+     * @param {string}      contact.jid_im        Agent's IM id
      */
     async sendAgent(contact) {
         console.log(LOG_ID + "Adding " + contact.displayName + " to database...");
@@ -107,7 +118,7 @@ class SDK {
 
     /**
      * Guest creation method: Create guest using rainbow then forward to DB to queue guest
-     * @param               body                  contains first_name, last_name, phone_number, skill
+     * @param {JSON}        body                  contains first_name, last_name, phone_number, skill
      * @param {string}      body.first_name       customer's first name
      * @param {string}      body.last_name        customer's last name
      * @param {string}      body.phone_number     customer's phone number
@@ -122,6 +133,7 @@ class SDK {
             "CustomerID": 0,
             "FirstName": guest.firstName,
             "LastName": guest.lastName,
+            "StrID": "",
             "jid_c": guest.jid_im,
             "Skill": body.skill
         };
@@ -182,27 +194,17 @@ class SDK {
         console.log(LOG_ID + "Command received: " + primaryCommand);
         console.log(LOG_ID + "Arguments: " + arguments);
 
+        let res;
         if (primaryCommand === "help") {
-            this.helpCommand(arg, message);
+            res = this.helpCommand(arg, message);
         } else if (primaryCommand === "reroute") {
-            this.rerouteCommand(arg, message);
+            res = this.rerouteCommand(arg, message);
         } else if (primaryCommand === "users") {
-            this.usersCommand(arg, message);
+            res = this.usersCommand(arg, message);
         } else {
-            this.nodeSDK.im.sendMessageToJid("Invalid command, try typing !help to see available commands", message.fromJid);
+            res = this.nodeSDK.im.sendMessageToJid("Invalid command, try typing !help to see available commands", message.fromJid);
         }
-    }
-
-    /**
-     * Help command method: To handle !help command, sends list of available commands
-     * @param arg
-     * @param message
-     */
-    helpCommand(arg, message) {
-        let commandMsg = "Hello Agent!\n\n";
-        commandMsg += "Type '!users' to see list of customers you are currently connected to\n";
-        commandMsg += "Type '!reroute <Customerid> <skill>' to reroute user to another agent with the required skill";
-        this.nodeSDK.im.sendMessageToJid(commandMsg, message.fromJid);
+        console.log(LOG_ID + res);
     }
 
     /**
@@ -211,22 +213,38 @@ class SDK {
      * @param {string}      arg[0]      customer's String id
      * @param {string}      arg[1]      new skill to route customer to
      * @param               message
+     * @returns response from sendMessageToJid
      */
     async rerouteCommand(arg, message) {
         if (arg.length !== 2) {
-            this.nodeSDK.im.sendMessageToJid("Type '!reroute <Customerid> <skill>' to reroute user to another agent with the required skill", message.fromJid);
+            let res = this.nodeSDK.im.sendMessageToJid("Type '!reroute <Customerid> <skill>' to reroute user to another agent with the required skill", message.fromJid);
+            Console.log(LOG_ID + res);
         } else {
             let contact = await this.getContactByID(arg[0]);
             let body = {"jid_c": contact.jid_im, "Skill": arg[1]};
             await db.rerouteCall(body);
-            this.nodeSDK.im.sendMessageToJid("Customer has been rerouted!", message.fromJid);
+            return this.nodeSDK.im.sendMessageToJid("Customer has been rerouted!", message.fromJid);
         }
+    }
+
+    /**
+     * Help command method: To handle !help command, sends list of available commands
+     * @param arg
+     * @param message
+     * @returns response from sendMessageToJid
+     */
+    async helpCommand(arg, message) {
+        let commandMsg = "Hello Agent!\n\n";
+        commandMsg += "Type '!users' to see list of customers you are currently connected to\n";
+        commandMsg += "Type '!reroute <Customerid> <skill>' to reroute user to another agent with the required skill";
+        return this.nodeSDK.im.sendMessageToJid(commandMsg, message.fromJid);
     }
 
     /**
      * Users command method: To handle !users command, sends list of customers currently handled by agent
      * @param arg
      * @param message
+     * @returns response from sendMessageToJid
      */
     async usersCommand(arg, message) {
         let listOfCustomers = await db.pullCalllog(message.fromJid);
@@ -235,7 +253,7 @@ class SDK {
             let contact = await this.getContactByJID(customer.jid_c);
             msgToSend += "\n" + "Name: " + contact._displayName + "\nCustomer id: " + contact.id;
         }
-        await this.nodeSDK.im.sendMessageToJid(msgToSend, message.fromJid);
+        return await this.nodeSDK.im.sendMessageToJid(msgToSend, message.fromJid);
     }
 
     /**
