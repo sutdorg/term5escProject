@@ -17,9 +17,12 @@ let configSDK = json.parse(txtSDK);
 let txtDB = configfileDB.toString();
 let configDB = json.parse(txtDB);
 
-database.start(configDB).then(res => {
-    sdk.start(configSDK).then(res => {
-        backend.start().then(res => {
+// Change accordingly to match the port on the frontend
+let port = process.env.PORT || 3000;
+
+database.start(configDB).then(() => {
+    sdk.start(configSDK).then(() => {
+        backend.start(port).then(() => {
             console.log(LOG_ID + "All services started");
         });
     });
