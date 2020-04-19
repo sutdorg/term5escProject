@@ -61,7 +61,7 @@ class SDK {
                 });
             });
 
-            this.nodeSDK.start(LOG_ID);
+            this.nodeSDK.start();
         });
     }
 
