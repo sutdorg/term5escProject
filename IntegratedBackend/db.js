@@ -104,6 +104,7 @@ class DB {
         try {
             let redirectedcusraw = await this.database.query("SELECT * FROM OngoingCalls WHERE jid_c = ?", [cus.jid_c]);
             let redirectedcus = redirectedcusraw[0];
+            await this.updateAgentminuscus(redirectedcus);
             await this.database.query("DELETE FROM OngoingCalls WHERE jid_c = ?", [cus.jid_c]);
             let skills = await this.database.query("SELECT * FROM Skills");
             let agentDetails = await this.database.query("SELECT * FROM Agent_Table");
@@ -139,10 +140,13 @@ class DB {
         let chosen_jid_a = agentDetails[agentChosen].jid_a;
         let agentCorrectAvailStatus;
         let doQuery;
+        let rtime;
         if (from === "queueingReq") {
             doQuery = sql.sqlOngoingCall;
+            rtime = null;
         } else {
             doQuery = sql.sqlCusAgent;
+            rtime = guestDetails.TimeRegistered;
         }
         if (agentDetails[agentChosen].NumOfCus === 2) {
             agentCorrectAvailStatus = "Busy";
@@ -158,7 +162,7 @@ class DB {
 
         try {
             await this.database.query(sql.sqlAgent, [ag.AgentID, ag.AvailStatus, ag.NumOfCus]);
-            await this.database.query(doQuery, [0, chosen_jid_a, guestDetails.jid_c, guestDetails.FirstName, guestDetails.LastName, guestDetails.StrID, null]);
+            await this.database.query(doQuery, [0, chosen_jid_a, guestDetails.jid_c, guestDetails.FirstName, guestDetails.LastName, guestDetails.StrID, rtime]);
         } catch (err) {
             // if any database query fail, will enter catch here...
             throw err;
@@ -435,7 +439,7 @@ class DB {
         let cusChosen = null;
 
         for (let i = 0; i < cusChosenList.length; i++) {
-            if (cusChosenList[i] !== "" && cusChosenList[i] != null) {
+            if (cusChosenList[i] != "" && cusChosenList[i] != null) {
                 if (mintime == null || (cusChosenList[i][0].TimeRegistered < mintime)) {
                     mintime = cusChosenList[i][0].TimeRegistered;
                     cusChosen = cusChosenList[i];
