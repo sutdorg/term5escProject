@@ -347,6 +347,9 @@ var ChatRoom = Vue.extend({
                       console.log(res);
                     });
                   that.textareaDisabled = false;
+                  var msgs_t = JSON.parse(localStorage.msgs);
+                  msgs_t.push({ from: "agent", me: false, content: "Connected! You can start chatting now." });
+                  localStorage.msgs = JSON.stringify(msgs_t);
                 })
                 .catch(function (err) {
                   console.log(
@@ -381,6 +384,11 @@ var ChatRoom = Vue.extend({
         me: false,
         content: "We are looking for an agent to connect you to.",
       });
+      this.msgs.push({
+        from: "agent",
+        me: false,
+        content: "Connecting, please hang on. We are sorry that you cannot send messages now.",
+      });
       localStorage.msgs = JSON.stringify(this.msgs);
     }, 1);
 
@@ -390,6 +398,7 @@ var ChatRoom = Vue.extend({
     this.timer1 = setInterval(() => {
       setTimeout(() => {
         this.msgs = JSON.parse(localStorage.msgs);
+        console.log("test");
       }, 1);
     }, 500);
 

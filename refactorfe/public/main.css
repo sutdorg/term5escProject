@@ -68,7 +68,7 @@ button.submit {
 }
 
 img {
-  width: 30px;
+  width: 30px !important;
   height: 20px;
   margin-top: 5px;
 }
@@ -101,6 +101,7 @@ img {
   padding-right: 4px;
   border-radius: 8px;
   margin-bottom: 2px;
+  max-width: 365px;
 }
 
 button.reroute_button {
