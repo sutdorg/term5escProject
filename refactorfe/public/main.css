@@ -73,6 +73,12 @@ img {
   margin-top: 5px;
 }
 
+.guest_chat img {
+  width: 30px;
+  height: 23px;
+  margin-top: 5px;
+}
+
 .chatroom {
   width: 400px;
   display: block;
@@ -98,21 +104,9 @@ img {
 }
 
 button.reroute_button {
+  display: none;
   float: right;
 }
-
-/* .agent_logo {
-  background: url("../assets/agent_logo.png") center;
-  background-size: cover;
-  display: flex;
-  justify-content: flex-start;
-}
-
-.guest_logo {
-  margin-top: 4px;
-  background: url("../assets/guest_logo.png") center;
-  background-size: cover;
-} */
 
 .guest_msg {
   border: 1px solid rgb(224, 250, 193);

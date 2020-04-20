@@ -24,29 +24,9 @@ var onLoaded = function onLoaded() {
     });
 };
 document.addEventListener(rainbowSDK.RAINBOW_ONREADY, onReady);
-
 document.addEventListener(rainbowSDK.RAINBOW_ONLOADED, onLoaded);
 rainbowSDK.start();
 rainbowSDK.load();
-console.log(rainbowSDK.version());
-
-// var onReady = function onReady() {
-//   var myRainbowLogin = "zee.dummyy@gmail.com"; // Replace by your login
-//   var myRainbowPassword = "3V<.8FygXu>2"; // Replace by your password
-
-//   // The SDK for Web is ready to be used, so you can sign in
-//   rainbowSDK.connection
-//     .signin(myRainbowLogin, myRainbowPassword)
-//     .then(function(account) {
-//       console.log("login successful");
-//       // Successfully signed to Rainbow and the SDK is started completely. Rainbow data can be retrieved.
-//     })
-//     .catch(function(err) {
-//       console.log("login error");
-//       console.log(err);
-//       // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
-//     });
-// };
 
 // Listen when the SDK is ready
 document.addEventListener(rainbowSDK.RAINBOW_ONREADY, onReady);
@@ -120,9 +100,7 @@ var FillForm = Vue.extend({
         alert("Please enter a valid phone number.");
         return;
       }
-      this.submit_disabled  = true;
-      //   console.log(this.first_name)
-      //   console.log(this.select_skill)
+      this.submit_disabled = true;
       // and store data in localStorage
       localStorage.last_name = this.last_name;
       localStorage.first_name = this.first_name;
@@ -215,12 +193,13 @@ var ChatRoom = Vue.extend({
   </div>
   <div class="chat-input">
       <textarea @keyup.enter.exact="send()" @keydown.enter.exact.prevent
-  @keydown.enter.shift.exact="newline" v-model="inputContent"></textarea>
+  @keydown.enter.shift.exact="newline" v-model="inputContent" :disabled="textareaDisabled"></textarea>
     <button v-on:click="send()">Send</button>
   </div>
 </div>`,
   data() {
     return {
+      textareaDisabled: true,
       msgs: [
         // some demo message
         { from: "guest", me: true, content: "1 hello from guest" },
@@ -248,12 +227,6 @@ var ChatRoom = Vue.extend({
       localStorage.clear();
 
       this.$router.push("Bye");
-      // should clear localStorage and whatever here
-      // localStorage.removeItem(last_name);
-      // localStorage.removeItem(first_name);
-      // localStorage.removeItem(phone_number);
-      // localStorage.removeItem(selected_skill);
-      // remove whole localStorage
     },
     reroute() {
       this.$router.push("rerouting");
@@ -308,6 +281,8 @@ var ChatRoom = Vue.extend({
   },
 
   mounted() {
+    var that = this;
+    this.textareaDisabled = true;
     let onNewMessageReceived = function (event) {
       let message = event.detail.message;
       console.log(message);
@@ -327,7 +302,7 @@ var ChatRoom = Vue.extend({
       onNewMessageReceived
     );
 
-    let init_conversation = function() {
+    let init_conversation = () => {
       var contactJID = localStorage.jid_a; // agent JID
       console.log("This agent JID is " + contactJID);
       var selectedContact = null;
@@ -347,15 +322,12 @@ var ChatRoom = Vue.extend({
             // console.log(selectedContact)
             if (selectedContact) {
               // Ok, we have the contact object
-              console.log("if loop");
               rainbowSDK.conversations
                 .openConversationForContact(selectedContact)
                 .then(function (conversation) {
-                  console.log("test");
                   console.log(conversation);
                   localStorage.setItem("Conversation", conversation);
                   Conversation = conversation;
-
                   console.log("Conversation estabished");
                   console.log(Conversation);
                   // https://hub.openrainbow.com/#/documentation/doc/sdk/web/guides/Chatting_with_Rainbow_users4
@@ -365,25 +337,20 @@ var ChatRoom = Vue.extend({
                     "New customer!"
                   );
                   console.log("First message sent!");
-                  // should send to backend that conversation is established
 
-                  // send to Ryan saying chat is started
-                  // var temp_json = {};
-                  // temp_json["jid_a"] = localStorage.jid_a;
-                  // // Ryan IP
-                  // axios
-                  //   .post(
-                  //     api_addr + "update/cSuccess",
-                  //     temp_json
-                  //   )
-                  //   .then(function (res) {
-                  //     console.log(res);
-                  //   });
+                  // should send to backend that conversation is established
+                  var temp_json = {};
+                  temp_json["jid_a"] = localStorage.jid_a;
+                  axios
+                    .post(api_addr + "update/cSuccess", temp_json)
+                    .then(function (res) {
+                      console.log(res);
+                    });
+                  that.textareaDisabled = false;
                 })
                 .catch(function (err) {
                   console.log(
-                    "Fail to create a conversation using contact: " +
-                      contact_t
+                    "Fail to create a conversation using contact: " + contact_t
                   );
                   console.log(err);
                 });
@@ -392,7 +359,6 @@ var ChatRoom = Vue.extend({
             }
           })
           .catch(function (err) {
-            //Something when wrong with the server. Handle the trouble here
             console.log(err);
           });
       }
@@ -427,44 +393,17 @@ var ChatRoom = Vue.extend({
       }, 1);
     }, 500);
 
-    // this.timer0 = setTimeout(() => {
-    //   var msgs_t = JSON.parse(localStorage.msgs);
-
-    //   msgs_t.push({
-    //     from: "agent",
-    //     me: false,
-    //     content: "Hi, " + localStorage.first_name + "!"
-    //   });
-    //   msgs_t.push({
-    //     from: "agent",
-    //     me: false,
-    //     content: "We are looking for an agent to connect you to."
-    //   });
-    //   localStorage.msgs = JSON.stringify(msgs_t);
-    // }, 10);
-
     // run after 5 senconds only once
     this.timer2 = setTimeout(() => {
       // get Contact object using JID in localStorage
-      // https://hub.openrainbow.com/#/documentation/doc/sdk/web/api/contacts#module_Contacts+getContactById
-
-      // var myRainbowLogin =
-      //   "93pn2uk4c30c6362pw4r9qo5n50ctb0tanldb9bt@f073b5c05e4911ea9a6dcf004cf8c14e.sandbox.openrainbow.com"; // Replace by your login
-      // var myRainbowPassword = "X,V/j}776~3QXjuF1M3xnjY4US]P38d[Tjz@Rp<4"; // Replace by your password
-
       var myRainbowLogin = localStorage.guest_login;
       var myRainbowPassword = localStorage.guest_password;
-
-      console.log(myRainbowLogin);
-      console.log(myRainbowPassword);
-
       // The SDK for Web is ready to be used, so you can sign in
       console.log("Start logging in");
       rainbowSDK.connection
         .signin(myRainbowLogin, myRainbowPassword)
         .then(function (account) {
           console.log("login successful");
-
           init_conversation(localStorage.jid_a); // init conversation
         })
         .catch(function (err) {
@@ -473,38 +412,27 @@ var ChatRoom = Vue.extend({
           // An error occurs (e.g. bad credentials). Application could be informed that sign in has failed
         });
     }, 5000);
-    // console.log(this.contact_i);
-
-    // we have a new message listener
-    // we do not need this part, maybe
-    // check for new messages every 3 seconds
-
-    // this.timer1 = setInterval(() => {
-    //   setTimeout(this.get_msg, 1);
-    // }, 3000);
 
     // reroute
     this.timer3 = setInterval(() => {
       setTimeout(() => {
         axios
-        .post(api_addr + "cusagent", {
-          jid_c: localStorage.jid_c,
-        })
-        .then((res) => {
-          console.log("reroute", res);
-          if (res.data.agentAvailable == true) {
-            // sometimes need res.body.field
-            localStorage.jid_c = res.data.jid_c;
-            localStorage.jid_a = res.data.jid_a;
-            // this.$router.push("chatroom");
-            // localStorage.msgs = JSON.stringify({});
-            rainbowSDK.conversations.closeConversation(Conversation); // close current conversation
-            init_conversation();
-          } else {
-            // do nothing
-            console.log("Still no agent available from loop");
-          }
-        });
+          .post(api_addr + "cusagent", {
+            jid_c: localStorage.jid_c,
+          })
+          .then((res) => {
+            console.log("reroute", res);
+            if (res.data.agentAvailable == true) {
+              // sometimes need res.body.field
+              localStorage.jid_c = res.data.jid_c;
+              localStorage.jid_a = res.data.jid_a;
+              rainbowSDK.conversations.closeConversation(Conversation); // close current conversation
+              init_conversation();
+            } else {
+              // do nothing
+              console.log("Still no agent available from loop");
+            }
+          });
       }, 0);
     }, 5000);
 
@@ -516,8 +444,6 @@ var ChatRoom = Vue.extend({
         if (e) {
           e.returnValue = "";
         }
-        // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
-        this.console.log("customer closes chatroom, sending ");
         // end chat
         console.log("end chat here");
         // close conversation
@@ -542,7 +468,6 @@ var ChatRoom = Vue.extend({
     clearInterval(this.timer1);
     clearInterval(this.timer2);
     clearInterval(this.timer3);
-
   },
 });
 
@@ -596,13 +521,9 @@ var Waiting = Vue.extend({
         // Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
         this.console.log("customer closes waiting, sending cancelcall");
 
-        axios
-          .post(api_addr + "cancelcall", {
-            jid_c: localStorage.jid_c, // TODO:
-          })
-          .then((res) => {
-            // do nothing
-          });
+        axios.post(api_addr + "cancelcall", {
+          jid_c: localStorage.jid_c,
+        });
         return "";
       } else {
         window.onbeforeunload = null;
@@ -640,7 +561,6 @@ var Rerouting = Vue.extend({
         return;
       }
       localStorage.selected_skill = this.selected_skill;
-      console.log(localStorage.selected_skill);
       this.rerouting_msg =
         "We are reouting you to " +
         this.selected_skill +
