@@ -279,7 +279,6 @@ var ChatRoom = Vue.extend({
       // this.msgs.push();
     },
   },
-
   mounted() {
     var that = this;
     this.textareaDisabled = true;
@@ -348,7 +347,11 @@ var ChatRoom = Vue.extend({
                     });
                   that.textareaDisabled = false;
                   var msgs_t = JSON.parse(localStorage.msgs);
-                  msgs_t.push({ from: "agent", me: false, content: "Connected! You can start chatting now." });
+                  msgs_t.push({
+                    from: "agent",
+                    me: false,
+                    content: "Connected! You can start chatting now.",
+                  });
                   localStorage.msgs = JSON.stringify(msgs_t);
                 })
                 .catch(function (err) {
@@ -387,7 +390,8 @@ var ChatRoom = Vue.extend({
       this.msgs.push({
         from: "agent",
         me: false,
-        content: "Connecting, please hang on. We are sorry that you cannot send messages now.",
+        content:
+          "Connecting, please hang on. We are sorry that you cannot send messages now.",
       });
       localStorage.msgs = JSON.stringify(this.msgs);
     }, 1);
@@ -398,7 +402,11 @@ var ChatRoom = Vue.extend({
     this.timer1 = setInterval(() => {
       setTimeout(() => {
         this.msgs = JSON.parse(localStorage.msgs);
-        console.log("test");
+        // scroll to bottom
+        this.$nextTick(() => {
+          var scrollbar = document.querySelector(".chat-body");
+          scrollbar.scrollTop = scrollbar.scrollHeight;
+        });
       }, 1);
     }, 500);
 
