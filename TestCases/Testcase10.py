@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
-driver = webdriver.Chrome()
+driver = webdriver.Firefox()
 wait = WebDriverWait(driver, 100)
 driver.get('https://web-sandbox.openrainbow.com/app/1.69.3/index.html')
 wait.until(EC.presence_of_element_located((By.ID, "username")))
@@ -37,18 +37,19 @@ time.sleep(1)
 driver.find_element_by_class_name("buttonTour").click()
 time.sleep(2)
 driver.find_element_by_id("userSettings").click()
-time.sleep(1)
+time.sleep(3)
 Online = driver.find_element_by_xpath(
-    "/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div[2]/ul/li[1]/a/div[2]/span")
+    "/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div/ul/li[1]/a/div[2]/span")
+
 action = ActionChains(driver)
 action.move_to_element(Online).perform()
 time.sleep(2)
 Away = driver.find_element_by_xpath(
-    '/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div[2]/ul/li[1]/ul/li[2]/a/div[3]/span')
+    '/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div/ul/li[1]/ul/li[2]/a/div[3]/span')
 Away.click()
 time.sleep(2)
 
-driver2 = webdriver.Chrome()
+driver2 = webdriver.Firefox()
 driver2.get('https://escproject.sutd.org/')
 time.sleep(3)
 # Click Live Chat
@@ -75,10 +76,10 @@ driver.find_element_by_id("userSettings").click()
 time.sleep(1)
 action1 = ActionChains(driver)
 action1.move_to_element(driver.find_element_by_xpath(
-    "/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div[2]/ul/li[1]/a/div[2]/span")).perform()
+    "/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div/ul/li[1]/a/div[2]/span")).perform()
 time.sleep(2)
 asd = driver.find_element_by_xpath(
-    "/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div[2]/ul/li[1]/ul/li[1]/a/div[3]/span")
+    "/html/body/div[2]/div/div[2]/div[1]/div/div[3]/top-area/div/div[2]/div[2]/top-user/div/div/ul/li[1]/ul/li[1]/a/div[3]/span")
 
 time.sleep(1)
 asd.click()
