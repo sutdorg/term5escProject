@@ -38,8 +38,12 @@ class SDK {
                 };
                 if (contact.presence === "online") {
                     db.offlinetoOnline(agentDetails);
+                    // this test, directly call function
+                    // should return 1 on success
                 } else {
                     db.onlineToOffline(agentDetails);
+                    // this test, directly call function
+                    // should return 1 on success
                 }
             });
 
@@ -49,6 +53,7 @@ class SDK {
                 if (!message.fromJid.includes(this.nodeSDK.connectedUser.jid_im)) {
                     if (message.type === "chat" && message.content.startsWith("!")) {
                         this.processCommand(message);
+                        // this test, directly call function
                     }
                 }
             });
@@ -56,8 +61,10 @@ class SDK {
             // event handler for rainbow ready
             this.nodeSDK.events.on("rainbow_onready", () => {
                 console.log(LOG_ID + "rainbow started");
-                this.initAgents().then(() => {
+                this.initAgents().then((msg) => {
                     resolve();
+                    // directly call function
+                    // should return 1 on success
                 });
             });
 
@@ -70,14 +77,18 @@ class SDK {
      * - Add agents to database
      * - Add all users in company into contact list of admin
      * - Initiate first contact of bot with agent
-     * @returns {Promise<void>}
+     * @returns {Promise<number>}
      */
     async initAgents() {
         let arrayUsers = await this.nodeSDK.admin.getAllUsers("small");
         for (const user of arrayUsers) {
             let contact = await this.getContactByID(user.id);
             if (!(contact.roles.includes("admin") || contact.roles.includes("guest"))) {
-                await this.sendAgent(contact);
+                try {
+                    await this.sendAgent(contact);
+                } catch (err) {
+                    return -1;
+                }
                 try {
                     await this.nodeSDK.contacts.addToContactsList(contact);
                     await this.nodeSDK.im.sendMessageToJid("Hello! Welcome to the company!", contact.jid_im);
@@ -86,6 +97,7 @@ class SDK {
                 }
             }
         }
+        return 1;
     }
 
     /**
@@ -112,8 +124,12 @@ class SDK {
             "NumOfCus": 0,
             "jid_a": contact.jid_im
         };
-        await db.addingAgent(agentDetails);
-        console.log(LOG_ID + "Added " + contact.displayName + " to database")
+        try {
+            await db.addingAgent(agentDetails);
+            console.log(LOG_ID + "Added " + contact.displayName + " to database")
+        } catch (err) {
+            throw err;
+        }
     }
 
     /**
