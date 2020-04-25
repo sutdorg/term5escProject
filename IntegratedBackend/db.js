@@ -54,16 +54,16 @@ class DB {
     }
 
     /**
-     * Method to Handle a new Request that has been created from the frontend by a new Customer
+     * Method to Handle a new Request that has been created from the frontend by a new Guest
      * if available agent exists to answer call, give the ID of the agent with agentAvailable = true
      * else Queue agent into the appropriate queue and return agentAvailable = false
      * @param           cus
      * @param {int}     cus.CustomerID     set to 0 by default
-     * @param {string}  cus.FirstName      first name of the customer
-     * @param {string}  cus.StrID          Customer's string ID
-     * @param {string}  cus.LastName       last name of the customer
-     * @param {string}  cus.jid_c          Customer JID
-     * @param {string}  cus.Skill          Skill that the customer is requesting for
+     * @param {string}  cus.FirstName      first name of the guest
+     * @param {string}  cus.StrID          Guest's string ID
+     * @param {string}  cus.LastName       last name of the guest
+     * @param {string}  cus.jid_c          Guest JID
+     * @param {string}  cus.Skill          Skill that the guest is requesting for
      * @returns response data that is to be sent to frontend
      */
     async queueingReq(cus) {
@@ -92,15 +92,15 @@ class DB {
     }
 
     /**
-     * Method to reroute customer to appropriate agent if they chose a wrong skill
+     * Method to reroute guest to appropriate agent if they chose a wrong skill
      * if agent is available queue the request into UpcomingCalls
-     * else add the customer to the respective Skill queue
-     * @param {string} cus.jid_c    Customer JID
+     * else add the guest to the respective Skill queue
+     * @param {string} cus.jid_c    Guest JID
      * @param {string} cus.Skill    New Skill to reroute to
      * @returns response data that is to be sent to frontend
      */
     async rerouteCall(cus) {
-        console.log(LOG_ID + "Rerouting customer");
+        console.log(LOG_ID + "Rerouting guest");
         try {
             let redirectedcusraw = await this.database.query("SELECT * FROM OngoingCalls WHERE jid_c = ?", [cus.jid_c]);
             let redirectedcus = redirectedcusraw[0];
@@ -129,7 +129,7 @@ class DB {
     }
 
     /**
-     *
+     *Method to update the status of the agent and also to add agent - guest pair to an ongoing call list when connected
      * @param agentDetails
      * @param guestDetails
      * @param agentChosen
@@ -174,9 +174,8 @@ class DB {
      * Method to check if there is an available agent for the request with skill cushead
      * if available agent exists to answer call, return index of agent
      * else return null
-     * @param {string} cusSkill Skill that the customer is requesting for
-     * @param {[]} agentDetails
-     * @param agentDetails.TimeAvail
+     * @param {string} cusSkill Skill that the guest is requesting for
+     * @param {JSON} agentDetails All details of the agents in the agent table
      * @returns {number} Index of Agent Chosen, returns -1 if no agent is available
      */
     isThereAgentAvail(cusSkill, agentDetails) {
@@ -209,11 +208,11 @@ class DB {
 
     /**
      * Method to handle Agent who has a call ended
-     * if there is a customer, queue the customer to the incoming calls table
+     * if there is a guest with the appropriate skill, queue the agent-guest pair to the incoming calls table
      * else reduce the agent.NumOfCus and set agent.AvailStatus to "Available"
      * @param               agentDetails
-     * @param {string}      agentDetails.jid_c            customer's IM id
-     * @param {string}      agentDetails.jid_a            agent's IM id
+     * @param {string}      agentDetails.jid_c            guest's JID
+     * @param {string}      agentDetails.jid_a            agent's JID
      * @returns {String} Message stating that it has been handled
      */
     async resolveCall(agentDetails) {
@@ -254,7 +253,7 @@ class DB {
     }
 
     /**
-     * Method to update agent and reduce number of customers in event of call ending
+     * Method to update agent and reduce number of guests in event of call ending
      * @param {string}      body.jid_a          Agent's JID
      */
     async updateAgentminuscus(body) {
@@ -319,7 +318,7 @@ class DB {
 
     /**
      * Method to set the agent status to change from offline to online
-     * if there are customers that are waiting for a agent with his queues, set agent AvailStatus to Available and queue the pair into upcoming calls
+     * if there are guests that are waiting for a agent with his skill, set agent AvailStatus to Available and queue the pair into upcoming calls
      * else set agent to Available
      * @param {string}      agentDetails.jid_a          Agent's JID
      * @returns {string} Message stating that the agent has been set to online
@@ -339,10 +338,10 @@ class DB {
     }
 
     /**
-     * Method to connect customers to agent that has just been set online
-     * if there are customers that are waiting for a agent with his queues,queue the pair into upcoming calls
+     * Method to connect guests to agent that has just been set online
+     * if there are guests that are waiting for a agent with his queues,queue agent-guest pair into upcoming calls
      * @param {string}      req.jid_a          Agent's JID
-     * @returns {int}  returns number of customers that will be added to agent
+     * @returns {int}  returns number of guests that will be added to agent
      */
     async agentLookingForCustomer(req) {
         let ag = req;
@@ -367,19 +366,27 @@ class DB {
                     await this.database.query(sql.sqlCusAgent, [0, infotosend.jid_a, chosenjid, anstosend.FirstName, anstosend.LastName, anstosend.StrID, anstosend.TimeRegistered]);
                 }
                 await this.database.query("DELETE FROM Q1 WHERE JID_IM =?", [chosenjid]);
-                //console.log(LOG_ID + "sent and del from Q1");
                 await this.database.query("DELETE FROM Q2 WHERE JID_IM =?", [chosenjid]);
-                //console.log(LOG_ID + "sent and deleted from Q2");
                 await this.database.query("DELETE FROM Q3 WHERE JID_IM =?", [chosenjid]);
-                //console.log(LOG_ID + "sent and deleted from Q3");
-                //console.log(z + " Customers have been scheduled");
+
             }
             return z;
         } catch (err) {
             throw err;
         }
     }
-
+    /**
+     * Method to get a list contatining the index of the skills that the agent has
+     * @param {int} agentEntry.AgentID keep as 0 by default
+     * @param {string} agentEntry.Skill1 Skill1 that the Agent has, null if no skill
+     * @param {string} agentEntry.Skill2 Skill2 that the Agent has, null if no skill
+     * @param {string} agentEntry.Skill3 Skill3 that the Agent has, null if no skill
+     * @param {string} agentEntry.Name Name of Agent
+     * @param {string} agentEntry.AvailStatus Current Status of Agent
+     * @param {int} agentEntry.NumOfCus keep as 0 by default
+     * @param {string} agentEntry.jid_a Agent's JID     
+     * @returns {Array} array of index for the skills that the agent has
+     */
     async getcuslist(agentEntry) {
         let sklist = ['one', 'two', 'three', 'four', 'five'];
         let cuslist = [];
@@ -399,7 +406,11 @@ class DB {
         }
 
     }
-
+    /**
+     * Method to choose the guest that the agent is supposed to connect with 
+     * @param cuslist array of index for the skills that the agent has
+     * @returns {Array} array of index for the skills that the agent has
+     */
     async pushList(cuslist) {
         let TopCusList = [];
         let chosenCusList = [];
@@ -429,10 +440,9 @@ class DB {
     }
 
     /**
-     * Method to Choose customer to connect to available agent
-     * @param {Array} cusChosenList List of customers who are on the top of the different skill queues
-     * @param cusChosenList.TimeRegistered
-     * @returns {Array} Array only containing customer to be connected in index 0
+     * Method to Choose guest to connect to available agent based on the earliest time given the earliest entries in each relevant queue
+     * @param {Array} cusChosenList List of guest's database entries who are on the top of the different skill queues
+     * @returns {Array} Array only containing guest to be connected in index 0
      */
     chooseCustomer(cusChosenList) {
         let mintime = null;
@@ -452,11 +462,10 @@ class DB {
 
     /**
      * Updates status of a agent that has gone from offline to online
-     * if there are customers that are waiting for a agent with his queues,set agent AvailStatus to Available and increase the NumOfCus of Agent by num
+     * if there are agent that are waiting for a agent with his skill,set agent AvailStatus to Available and increase the NumOfCus of Agent by num
      * else set agent AvailStatus to Available
      * @param {string}      body.jid_a          Agent's JID
-     * @param body
-     * @param {int}         num                 number of new customers to this agent
+     * @param {int}         num                 number of new guests to this agent
      *
      */
     async updateAgentOfftoOn(body, num) {
@@ -488,11 +497,10 @@ class DB {
     }
 
     /**
-     * Method to send agent information to waiting client, if exists in upcoming call tables
-     * if there is an agent for the customer, send agent jid and agent Available to be true
+     * Method to send agent information to waiting guest, if exists in upcoming call tables
+     * if there is an agent to connect to the guest, send agent jid and agent Available to be true
      * else agentAvailable to be false
-     * @param {string}      guestDetails.jid_c           customer's JID
-     * @param guestDetails
+     * @param {string}      guestDetails.jid_c           guest's JID
      * @param {Response}      resFE           object to respond to http req
      * @returns {{"jid_a": string, "jid_c": string, "agentAvailable": boolean}}
      */
@@ -531,9 +539,9 @@ class DB {
     }
 
     /**
-     * Method to handle close of tab when Customer is still in waiting room
-     * @param {string}      body.jid_c          Customer's JID
-     * @return {String} Message indicating Customer has been removed from Skill Queues
+     * Method to handle close of tab when Guest is still in waiting room
+     * @param {string}      body.jid_c          guest's JID
+     * @return {String} Message indicating guest has been removed from Skill Queues
      */
     async waitingEndCall(body) {
         console.log(LOG_ID, "customer cancelled call, deleting customer from queue");
