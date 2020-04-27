@@ -16,7 +16,7 @@ class BE {
 
     /**
      *
-     * @param port
+     * @param port  port number
      * @returns {Promise<>}
      */
     start(port) {
@@ -70,7 +70,9 @@ class BE {
              */
             app.post('/cusagent', function (req, res) {
                 console.log(LOG_ID + "/cusagent called");
-                db.waiting(req.body, res);
+                db.waiting(req.body).then((msg) => {
+                    res.send(msg);
+                });
             });
 
             app.listen(this.port, () => {
