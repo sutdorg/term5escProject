@@ -16,7 +16,7 @@ class BE {
 
     /**
      *
-     * @param port
+     * @param port  port number
      * @returns {Promise<>}
      */
     start(port) {
@@ -38,7 +38,6 @@ class BE {
                 console.log(LOG_ID + "/createguest called");
                 sdk.createGuest(req.body).then((msg) => {
                     res.send(msg);
-                    // test for msg.agentAvailable
                 });
             });
 
@@ -51,7 +50,6 @@ class BE {
                 console.log(LOG_ID + "/endcall called");
                 sdk.endCall(req.body).then((msg) => {
                     res.send(msg);
-                    // test for 1
                 });
             });
 
@@ -63,7 +61,6 @@ class BE {
                 console.log("debug", LOG_ID + "/cancelcall called");
                 sdk.cancelCall(req.body).then((msg) => {
                     res.send(msg);
-                    // test for 1
                 });
             });
 
@@ -73,9 +70,8 @@ class BE {
              */
             app.post('/cusagent', function (req, res) {
                 console.log(LOG_ID + "/cusagent called");
-                db.waiting(req.body, res).then((msg) => {
-                    console.log(msg);
-                    // test for 1
+                db.waiting(req.body).then((msg) => {
+                    res.send(msg);
                 });
             });
 

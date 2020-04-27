@@ -38,12 +38,8 @@ class SDK {
                 };
                 if (contact.presence === "online") {
                     db.offlinetoOnline(agentDetails);
-                    // this test, directly call function
-                    // should return 1 on success
                 } else {
                     db.onlineToOffline(agentDetails);
-                    // this test, directly call function
-                    // should return 1 on success
                 }
             });
 
@@ -53,7 +49,6 @@ class SDK {
                 if (!message.fromJid.includes(this.nodeSDK.connectedUser.jid_im)) {
                     if (message.type === "chat" && message.content.startsWith("!")) {
                         this.processCommand(message);
-                        // this test, directly call function
                     }
                 }
             });
@@ -61,10 +56,8 @@ class SDK {
             // event handler for rainbow ready
             this.nodeSDK.events.on("rainbow_onready", () => {
                 console.log(LOG_ID + "rainbow started");
-                this.initAgents().then((msg) => {
+                this.initAgents().then(() => {
                     resolve();
-                    // directly call function
-                    // should return 1 on success
                 });
             });
 

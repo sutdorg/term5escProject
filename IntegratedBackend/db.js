@@ -493,25 +493,22 @@ class DB {
      * else agentAvailable to be false
      * @param {string}      guestDetails.jid_c           customer's JID
      * @param guestDetails
-     * @param {Response}      resFE           object to respond to http req
      * @returns {{"jid_a": string, "jid_c": string, "agentAvailable": boolean}}
      */
-    async waiting(guestDetails, resFE) {
+    async waiting(guestDetails) {
         console.log(LOG_ID, "Checking waiting");
         try {
             let rows = await this.database.query("SELECT * FROM UpcomingCall WHERE jid_c =?", [guestDetails.jid_c]);
             if (rows[0] !== null && typeof (rows[0]) !== 'undefined') {
-                resFE.send({"jid_a": rows[0].jid_a, "jid_c": rows[0].jid_c, "agentAvailable": true});
                 await this.database.query("DELETE FROM UpcomingCall WHERE idUpcomingCall= ?", [rows[0].idUpcomingCall]);
                 await this.database.query(sql.sqlOngoingCall, [0, rows[0].jid_a, rows[0].jid_c, rows[0].FirstName, rows[0].LastName, rows[0].StrID, rows[0].TimeRegistered]);
-                return {"agentAvailable": true};
+                return ({"jid_a": rows[0].jid_a, "jid_c": rows[0].jid_c, "agentAvailable": true});
             } else {
-                resFE.send({"agentAvailable": false});
+
                 return {"agentAvailable": false};
             }
         } catch (err) {
             console.log(LOG_ID + err);
-            resFE.send({"agentAvailable": false});
             return {"agentAvailable": false};
         }
 
